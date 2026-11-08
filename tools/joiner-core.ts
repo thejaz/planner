@@ -46,7 +46,7 @@ export function migrateJoiner(text: string, codes: string[]) {
     if (extras.length) {
       const extra = extras[0]!;
       const base = label.slice(0, extra.index).trimEnd();
-      if (extras.length !== 1 || label.slice(extra.index! + extra[0].length).trim() || !/^[a-z][a-z0-9]*$/i.test(base) || !known.has(extra[2]!.toUpperCase())) {
+      if (extras.length !== 1 || label.slice(extra.index + extra[0].length).trim() || !/^[a-z][a-z0-9]*$/i.test(base) || !known.has(extra[2]!.toUpperCase())) {
         issues.push(`Line ${line.index + 1}: unsupported extra-credit shape; needs explicit allocation`);
         return line.raw + line.eol;
       }
@@ -63,7 +63,7 @@ export function migrateJoiner(text: string, codes: string[]) {
         return line.raw + line.eol;
       }
       duration = `${first}-${added}/${before.elapsed}`;
-      label = `${base}-${extra[2]}${label.slice(extra.index! + extra[0].length)}`;
+      label = `${base}-${extra[2]}${label.slice(extra.index + extra[0].length)}`;
       const retired = parseDay(`${row[1]}${duration}${row[3]}${label}`, '', codes).entries[0]!;
       if (!equal(nonzero(before.credits), nonzero(retired.credits)) || before.elapsed !== retired.elapsed)
         throw Error(`Line ${line.index + 1}: retiring extra credit changed its meaning`);

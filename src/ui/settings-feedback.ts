@@ -21,9 +21,9 @@ let accessibleLabelSequence = 0;
 export function quietSettingsLabels(root: HTMLElement): void {
   for (const element of root.querySelectorAll<HTMLElement>('[aria-label]')) {
     const name = element.getAttribute('aria-label')!;
-    const label = root.ownerDocument.createElement('span');
-    label.id = `planner-settings-control-label-${++accessibleLabelSequence}`;
-    label.className = 'planner-sr-only'; label.textContent = name;
+    // Created in the control's own window (Settings may be a separate one), then moved beside it.
+    const label = root.createSpan({ cls: 'planner-sr-only', text: name,
+      attr: { id: `planner-settings-control-label-${++accessibleLabelSequence}` } });
     element.insertAdjacentElement('afterend', label);
     element.dataset.plannerAccessibleName = name;
     element.setAttribute('aria-labelledby', label.id); element.removeAttribute('aria-label');
@@ -106,7 +106,7 @@ export function actionFeedback(c: Controller, button: HTMLButtonElement, title: 
 
 /** Show an action's outcome when it is started from outside Settings, without a settings button. */
 function showAction(c: Controller, title: string, work: () => Promise<ActionResult>): void {
-  actionFeedback(c, c.app.workspace.containerEl.ownerDocument.createElement('button'), title, work);
+  actionFeedback(c, createEl('button'), title, work);
 }
 
 export function showRebuild(c: Controller): void { showAction(c, 'Rebuild index', () => rebuildResult(c)); }

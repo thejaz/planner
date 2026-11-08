@@ -1,5 +1,20 @@
 # Final regression checks
 
+## 0.2.134 verification - 8 November 2026
+
+Obsidian community review follow-up: removed five unnecessary type assertions
+(event types read with `in` so both the TypeScript 7 build and the TypeScript 5.9
+lint tools accept them), replaced two `document.createElement` calls with
+Obsidian's `createSpan`/`createEl`, and added the `Attest release` workflow for
+GitHub artifact attestations. Left by design: `execCommand` (native Undo while
+typing), vault enumeration (indexing daily notes) and the settings-search API.
+
+- `npm run check`: 780 tests in 51 files, typecheck/build passed; lint zero errors
+  and six advisory warnings (two createElement warnings resolved).
+- Isolated native checks on the exact build: settings-feedback, emoji-field,
+  suggestion-history, compact-edit, settings-section-tooltips and smoke. All 6
+  passed. The attestation workflow runs on GitHub after the next release.
+
 ## 0.2.133 verification - 8 November 2026
 
 Public-source preparation: neutral time-zone examples (Europe/Berlin in the

@@ -997,7 +997,7 @@ export class PlannerView extends ItemView {
     editor.onsubmit = event => { event.preventDefault(); void save(); };
     const refreshSuggestions = this.bindActivitySuggestions(input, suggestions, update, text => error.setText(text));
     input.oninput = event => {
-      const type = (event as InputEvent).inputType;
+      const type = 'inputType' in event ? event.inputType : undefined;
       if (type === 'historyUndo' || type === 'historyRedo') {
         durationTouched = durationHistory.restore(input.value, type === 'historyUndo' ? 'undo' : 'redo'); before = input.value;
       } else if (replacementIntent && !isDraftReplacement(input)) durationTouched = true;

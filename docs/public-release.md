@@ -41,6 +41,10 @@ unless `main` is clean, the versions agree, the tag is new and `dist/main.js` is
 the native-tested build; then it pushes `main`, tags the version exactly as the
 manifest names it and creates the GitHub release with `main.js`, `manifest.json`
 and `styles.css`. `npm run release -- --dry-run` checks without publishing.
+The `Attest release` GitHub workflow then rebuilds the tag, requires the three
+release files to match that build byte for byte, and adds artifact attestations
+for them (verify with `gh attestation verify main.js --repo thejaz/planner`).
+Run it by hand from the Actions tab, with the tag, to attest an earlier release.
 Follow the current official process:
 
 - https://docs.obsidian.md/plugins/releasing/submit-plugin

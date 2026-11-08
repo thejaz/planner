@@ -7,7 +7,7 @@ export function singleEmojiField(input: HTMLInputElement): HTMLInputElement {
   input.insertAdjacentElement('afterend', hint);
   input.addEventListener('input', event => {
     // An input method may still be composing the emoji.
-    if ((event as InputEvent).isComposing) return;
+    if ('isComposing' in event && event.isComposing) return;
     const result = singleEmoji(input.value, input.selectionStart ?? input.value.length, kept);
     hint.setText(result.refused ? 'One emoji only: type or pick a single emoji.' : '');
     if (input.value !== result.value) { input.value = result.value; input.setSelectionRange(result.value.length, result.value.length); }
