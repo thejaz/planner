@@ -1,0 +1,10 @@
+{
+  "id": "thejaz-planner",
+  "name": "THEJAZ Planner",
+  "version": "0.2.133",
+  "minAppVersion": "1.8.4",
+  "description": "Quick daily planning, accurate credits, and compact reviews using your existing plain Markdown.",
+  "author": "THEJAZ",
+  "authorUrl": "https://github.com/thejaz/",
+  "isDesktopOnly": true
+}

@@ -1,0 +1,67 @@
+import { assertTestVault } from './paths.mjs';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { readFile, writeFile } from 'node:fs/promises';
+// Label the report with the plugin version under test.
+const { version } = JSON.parse(await readFile('manifest.json', 'utf8'));
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9237');
+try {
+ const page = browser.contexts().flatMap(c => c.pages()).find(p => p.url().startsWith('app://obsidian.md/'));
+ await assertTestVault(page);
+ await page.waitForFunction(() => app.plugins.plugins['thejaz-planner']?.controller.indexed);
+ const checks = await page.evaluate(async () => {
+  const p=app.plugins.plugins['thejaz-planner'],c=p.controller,checks=[];
+  app.setting.close(); for (const button of [...document.querySelectorAll('.modal-content button')]) if (/^(cancel|done)$/i.test(button.textContent)) button.click();
+  const ok=(value,label)=>{if(!value)throw Error(label);checks.push(label);};
+  c.settings.autoUpdate=false;c.settings.summaryPath='thejaz-summary-now.md';c.settings.projectCodes=['CHP'];c.settings.weekendDays=[5];await c.saveSettings();
+  const day='2004-06-21.md',hist='2004-06-21--2004-06-21-thejaz-summary.md';
+  const current='### Days (2035-01-01 - 2035-12-31)\n### Projects\nCHP = 0\n';
+  const daily='## plan for 21 jun 04\n- [x] 08:00 (n/a) : awake\n- [x] 09:00 (60) : chp\nCHP = 60\nSUM = 60\n';
+  const summary='### Days (2004-06-21 - 2004-06-21)\n2004-06-21 = 60 🦥\n### Projects\nCHP = 60\n';
+  const store=async(path,text)=>{const file=app.vault.getAbstractFileByPath(path);if(file)await app.vault.modify(file,text);else await app.vault.create(path,text);c.ingest(path,text);};
+  await store(day,daily);await store(hist,summary);await store(c.settings.summaryPath,current);await c.index();
+  c.journal.data.operations=[];
+  const op=()=>({id:crypto.randomUUID(),time:Date.now(),label:'Update calculated totals',state:'interrupted',summaryPending:true,writes:[{path:day,before:daily.replace('(60) : chp','(2) : chp'),after:daily.replace('(60) : chp','(2) : chp'),state:'prepared'}]});
+  const seed=async()=>{const value=op();c.journal.data.operations=[value];await c.journal.save();return value;};
+  let value=await seed();await c.recheckSummary();
+  ok(value.state==='done'&&!value.summaryPending&&value.resolution,'A changed historical daily checkpoint closes after checking its owning historical summary');
+  ok(await c.port.read(day)===daily&&await c.port.read(hist)===summary&&await c.port.read(c.settings.summaryPath)===current,'Closure preserves daily and summary Markdown byte for byte');
+  ok(value.writes[0].before.includes('(2) : chp')&&value.writes[0].state==='prepared','Original recovery snapshot and original write state remain available as evidence');
+  ok(!c.issues.has('recovery'),'Verified obsolete checkpoint no longer produces an attention warning');
+  await c.undo();ok(await c.port.read(day)===daily,'Retiring a checkpoint does not become a source-edit Undo action');
+  await store(hist,summary.replace('= 60 🦥','= 50 🦥'));value=await seed();await c.recheckSummary();
+  ok(value.state==='interrupted'&&c.issues.get(`checkpoint:${value.id}`)?.includes(hist),'Historical discrepancies stay unresolved and identify the correct summary');
+  ok(!c.issues.has('summary')&&c.issues.has('recovery'),'A correct current summary cannot clear historical recovery');
+  const v=await p.open();await v.navigate('2004-06-21');v.recovery();
+  ok(document.querySelector('.modal-content')?.textContent.includes('summary check only'),'Recovery dialog distinguishes a read-only checkpoint');
+  ok([...document.querySelectorAll('.modal-content button')].some(b=>b.textContent.includes('open summary | '+hist)),'Recovery provides a link to the affected historical summary');
+  [...document.querySelectorAll('.modal-content button')].findLast(b=>/^cancel$/i.test(b.textContent))?.click();await v.summaryPreview();
+  ok(document.querySelector('.modal-content')?.textContent.includes('2035-01-01 - 2035-12-31')&&document.querySelector('.modal-content')?.textContent.includes('Some interrupted edits also need finishing'),'Summary dialog labels its own period and separates outstanding recovery');
+  [...document.querySelectorAll('.modal-content button')].findLast(b=>/^cancel$/i.test(b.textContent))?.click();
+  await c.reconcileSummary();ok(value.state==='interrupted','Reconciling the current summary does not dismiss a historical checkpoint');
+  await store(hist,summary);const duplicate='2004-06-21--2004-06-21-thejaz-summary-duplicate.md';await store(duplicate,summary);value=await seed();await c.recheckSummary();
+  ok(value.state==='interrupted'&&c.issues.get(`checkpoint:${value.id}`)?.includes('more than one summary covers'),'Overlapping periods block checkpoint closure');
+  await app.fileManager.trashFile(app.vault.getAbstractFileByPath(duplicate));c.summaries.delete(duplicate);
+  await app.fileManager.trashFile(app.vault.getAbstractFileByPath(hist));c.summaries.delete(hist);value=await seed();await c.recheckSummary();
+  ok(value.state==='interrupted'&&c.issues.get(`checkpoint:${value.id}`)?.includes('no summary covers'),'A missing historical summary cannot be mistaken for an irrelevant date');
+  await store(hist,summary);value=await seed();
+  const read=c.port.read.bind(c.port);let changed=false;
+  c.port.read=async path=>{const text=await read(path);if(path===day&&!changed){changed=true;await store(day,daily+'Concurrent prose.\n');}return text;};
+  try{await c.verifySummaryCheckpoints();}finally{c.port.read=read;}
+  ok(value.state==='interrupted'&&c.issues.get(`checkpoint:${value.id}`)?.includes('changed'),'Concurrent source edits reject resolution instead of clearing the warning');
+  ok((await c.port.read(day)).includes('Concurrent prose.'),'Concurrent prose is preserved');await store(day,daily);
+  const actual={...op(),writes:[{path:day,before:daily+'missing\n',after:daily+'new\n',state:'prepared'}]};c.journal.data.operations=[actual];await c.recheckSummary();
+  ok(actual.state==='interrupted'&&!actual.resolution,'Actual unfinished mutations are never retired as obsolete checkpoints');
+  let rejected=false;try{await c.recover();}catch(e){rejected=e.message.includes('was edited after this change stopped');}ok(rejected&&await c.port.read(day)===daily,'Changed actual writes retain guarded recovery and preserve current source');
+  c.journal.data.operations=[];const change={path:day,base:daily,patches:[{start:0,end:0,before:'',after:'Ordinary annotation.\n'}],label:'Edit test'};
+  await c.journal.perform([change],'Edit test');await c.undo();ok(await c.port.read(day)===daily,'Real edits remain exactly undoable');await c.redo();ok(await c.port.read(day)==='Ordinary annotation.\n'+daily,'Real edits remain exactly redoable');await c.undo();
+  value=await seed();await c.recheckSummary();window.checkpointRecoveryId=value.id;
+  return checks;
+ });
+ await page.evaluate(async()=>{await app.plugins.disablePlugin('thejaz-planner');await app.plugins.enablePlugin('thejaz-planner');});
+ await page.waitForFunction(()=>app.plugins.plugins['thejaz-planner']?.controller.indexed);
+ assert(await page.evaluate(()=>{const c=app.plugins.plugins['thejaz-planner'].controller,o=c.journal.data.operations.find(o=>o.id===window.checkpointRecoveryId);return o?.resolution&&!o.summaryPending&&o.state==='done'&&!c.issues.has('recovery');}));
+ checks.push('Resolved state and evidence survive a native plugin restart');
+ await writeFile('artifacts/checkpoint-recovery-native.json',JSON.stringify({version,checks},null,2));
+ console.log(JSON.stringify({passed:checks.length,checks},null,2));
+} finally { await browser.close(); }
