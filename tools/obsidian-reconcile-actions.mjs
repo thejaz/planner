@@ -1,0 +1,71 @@
+import { assertTestVault } from './paths.mjs';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { writeFile } from 'node:fs/promises';
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9237');
+const checks = [], errors = [];
+try {
+  const page = browser.contexts().flatMap(c => c.pages()).find(p => p.url().startsWith('app://obsidian.md/'));
+  assert(page);
+  await assertTestVault(page);
+  page.on('pageerror', e => errors.push(e.message));
+  if (await page.locator('.modal').count()) await page.keyboard.press('Escape');
+  await page.evaluate(async () => {
+    const p = app.plugins.plugins['thejaz-planner'], c = p.controller;
+    c.settings.autoUpdate = false; c.settings.summaryPath = 'Reconciliation actions verification.md';
+    const store = async (path, raw) => {
+      const old = app.vault.getAbstractFileByPath(path);
+      if (old) await app.vault.modify(old, raw); else await app.vault.create(path, raw);
+      c.ingest(path, raw);
+    };
+    for (const n of [1, 2, 3]) await store(`2007-01-0${n}.md`, `## plan for ${n} jan 07\n### morning\n- [x] 10:00 (${n === 3 ? '?' : '250'}) : chp\n\n---\nCHP = ${n === 3 ? 50 : 200}\nSUM = ${n === 3 ? 50 : 200}\n`);
+    await store(c.settings.summaryPath, '### Days\n2007-01-01 = 200 ❄️\n2007-01-02 = 200 ❄️\n2007-01-03 = 50 🦥\n### Projects\nCHP = 450\nDays (2007-01-01 - 2007-01-03): 3d\n');
+    const view = await p.open(); await view.navigate('2007-01-01'); await view.summaryPreview();
+  });
+  const cards = page.locator('.modal .planner-reconcile-issue');
+  await cards.nth(2).waitFor();
+  assert.equal(await cards.count(), 3);
+  assert.equal(await cards.nth(0).getByRole('button', { name: 'Review totals', exact: true }).count(), 1);
+  assert.equal(await cards.nth(2).getByRole('button', { name: 'Review totals', exact: true }).count(), 0);
+  assert((await cards.nth(2).innerText()).includes('incomplete'));
+  await page.screenshot({ path: 'artifacts/planner-reconcile-actions.png' });
+  checks.push('Blocked dates are clickable with specific explanations, total comparisons, and source actions; incomplete records offer source correction');
+  await cards.nth(0).getByRole('button', { name: 'Review totals', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).last().click();
+  assert.equal(await cards.count(), 3);
+  checks.push('Cancelling a daily comparison returns to the same summary list without changing notes');
+  await cards.nth(0).getByRole('button', { name: 'Review totals', exact: true }).click();
+  await page.getByRole('button', { name: 'Use calculated totals', exact: true }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.modal .planner-reconcile-issue').length === 2);
+  assert.equal(await page.locator('.modal').count(), 1);
+  assert.equal(await page.getByRole('button', { name: '2007-01-01', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: '2007-01-02', exact: true }).count(), 1);
+  checks.push('Saving a daily reconciliation automatically refreshes the summary and removes only the resolved day');
+  await page.getByRole('button', { name: '2007-01-02', exact: true }).click();
+  await page.waitForFunction(() => !document.querySelector('.modal'));
+  assert.equal(await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.date), '2007-01-02');
+  checks.push('A date button opens that day directly in Planner');
+  await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.summaryPreview());
+  await page.locator('.planner-reconcile-issue').last().getByRole('button', { name: 'Open note', exact: true }).click();
+  await page.waitForFunction(() => app.workspace.activeLeaf?.view.file?.path === '2007-01-03.md');
+  assert.equal(await page.locator('.modal').count(), 0);
+  checks.push('Open note closes the dialog and opens the correct Markdown note at its diagnostic');
+  await page.evaluate(async () => {
+    const p = app.plugins.plugins['thejaz-planner']; const v = await p.open(); await v.summaryPreview();
+    const c = p.controller, file = app.vault.getAbstractFileByPath('2007-01-03.md');
+    const raw = (await app.vault.read(file)).replace('(?)', '(50)');
+    await app.vault.modify(file, raw); c.ingest(file.path, raw);
+  });
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  // Refresh reopens the dialog after re-reading the summary from disk; wait for the redraw.
+  await page.waitForFunction(() => document.querySelectorAll('.modal .planner-reconcile-issue').length === 1);
+  assert.equal(await cards.count(), 1);
+  checks.push('Refresh rechecks edited records and keeps only unresolved days');
+  await page.locator('.modal').evaluate(el => { el.style.width = '340px'; });
+  assert(await page.locator('.planner-reconcile-issues').evaluate(el => el.scrollWidth <= el.clientWidth + 1));
+  await page.screenshot({ path: 'artifacts/planner-reconcile-actions-narrow.png' });
+  checks.push('Actionable rows wrap without horizontal overflow in a narrow dialog');
+  assert.deepEqual(errors, []);
+  await writeFile('artifacts/planner-reconcile-actions.json', JSON.stringify({ checks, errors }, null, 2));
+  console.log(JSON.stringify({ checks, errors }, null, 2));
+} finally { await browser.close(); }

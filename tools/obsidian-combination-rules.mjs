@@ -1,0 +1,55 @@
+import { assertTestVault } from './paths.mjs';
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+import {readFile,writeFile} from 'node:fs/promises';
+import {plannerUI} from './planner-ui.mjs';
+import {CRITERIA_NOTE,setCriteria} from './criteria-note.mjs';
+const full=/export const CANONICAL_LEGEND = `([\s\S]*?)`;/.exec(await readFile('src/core/marker-rules.ts','utf8'))[1];
+const bare=full.split('#### combination rules')[0],browser=await chromium.connectOverCDP('http://127.0.0.1:9237');
+const checks=[],errors=[],source='Combination rule verification.md',date='2014-06-03';
+try{
+ const page=plannerUI(browser.contexts().flatMap(c=>c.pages()).find(p=>p.url().startsWith('app://obsidian.md/')));
+ await assertTestVault(page);page.on('pageerror',e=>errors.push(e.message));
+ await page.keyboard.press('Escape');
+ // Rules live in thejaz-criteria.md; the summary holds only its days.
+ await setCriteria(page,bare);
+ await page.evaluate(async({source,date})=>{
+  const p=app.plugins.plugins['thejaz-planner'],c=p.controller;c.settings.autoUpdate=false;c.settings.summaryPath=source;c.settings.weekendDays=[5];c.settings.showMarkerCounts=true;c.settings.projectEmojis={};
+  const store=async(path,text)=>{const f=app.vault.getAbstractFileByPath(path);if(f)await app.vault.modify(f,text);else await app.vault.create(path,text);};
+  await store(source,'### Days\n2014-06-03 = 20 ☁️🕶️✌😣\n### Projects\nCHP = 20\nDays (2014-06-03 - 2014-06-03)\n');
+  await store(date+'.md','### morning\n- [x] 09:00 (20) : chp\nCHP = 20\nSUM = 20\n');
+  await c.index();const v=await p.open();v.switchMode('day');await v.navigate(date);
+ },{source,date});
+ const raw=()=>page.evaluate(source=>app.plugins.plugins['thejaz-planner'].controller.port.read(source),source);
+ const rules=async text=>{await setCriteria(page,text);await page.evaluate(async()=>{await app.plugins.plugins['thejaz-planner'].controller.index();});};
+ const open=async()=>{await page.locator('.planner').focus();await page.keyboard.press('c');await page.locator('.modal .planner-context-choices').waitFor();};
+ const report=async()=>{await page.evaluate(()=>{const v=app.workspace.getLeavesOfType('thejaz-planner')[0].view;v.preset='custom';v.rangeStart='2014-06-03';v.rangeEnd='2014-06-03';v.switchMode('review');});};
+ const day=async()=>{await page.evaluate(()=>app.workspace.getLeavesOfType('thejaz-planner')[0].view.switchMode('day'));};
+ const initial=await raw();await report();assert.equal(await page.locator('.planner-marker-checks').count(),0);
+ for(const key of ['☁','🕶','✌','😣'])assert.equal(await page.locator(`.planner-marker-count[data-marker="${key}"] strong`).innerText(),'1');
+ await day();await open();assert((await page.locator('.planner-context-choices').innerText()).includes('No combination restrictions defined'));
+ await page.keyboard.press('Escape');assert.equal(await raw(),initial);
+ await page.evaluate(async date=>{await app.plugins.plugins['thejaz-planner'].controller.updateSummary(new Set([date]),null);},date);assert.equal(await raw(),initial);
+ checks.push('Absent rules permit saved multi-context/productivity combinations with no combination warnings; Cancel and summary refresh preserve the exact source');
+ await rules(full);
+ const restricted=await raw();await report();assert((await page.locator('.planner-marker-checks').textContent()).includes('Combination rule'));assert.equal(await raw(),restricted);
+ await day();await open();await page.locator('.planner-context-policy > summary').click();assert((await page.locator('.planner-context-policy').innerText()).includes('at most one'));
+ await page.locator('.modal input[data-context=buffer]').check();await page.getByRole('button',{name:'Save context',exact:true}).click();await page.locator('.modal').waitFor({state:'detached'});assert((await raw()).includes('2014-06-03 = 20 ☁️\n'));
+ checks.push('Adding explicit Markdown rules to thejaz-criteria.md changes report validation without rewriting saved rows; picker displays parsed rules and applies their replacement policy');
+ await page.evaluate(async source=>{await app.vault.modify(app.vault.getAbstractFileByPath(source),'### Days\n2014-06-03 = 130 🦥\n### Projects\nCHP = 130\nDays (2014-06-03 - 2014-06-03)\n');},source);
+ await rules(bare+'#### Combination rules\n- replaces | ☁️ | 🦥\n');
+ await page.evaluate(async()=>{await app.workspace.getLeavesOfType('thejaz-planner')[0].view.refresh();});
+ await open();await page.locator('.modal input[data-context=buffer]').check();
+ assert((await page.locator('.planner-context-choices').innerText()).includes('Replaces 🦥'));
+ assert(!(await page.locator('.planner-context-result').innerText()).includes('🦥'));
+ await page.getByRole('button',{name:'Save context',exact:true}).click();await page.locator('.modal').waitFor({state:'detached'});assert((await raw()).includes('2014-06-03 = 130 ☁️\n'));
+ checks.push('Custom replaces rule changes live preview and persisted output: buffer replaces low-pro only because the criteria note says so');
+ await open();await page.locator('.modal input[data-context=at-ease]').check();
+ await page.evaluate(async note=>{const f=app.vault.getAbstractFileByPath(note);await app.vault.modify(f,(await app.vault.read(f)).replace('replaces | ☁️ | 🦥','replaces | ☁️ | ❄️'));},CRITERIA_NOTE);
+ await page.getByRole('button',{name:'Save context',exact:true}).click();await page.locator('.modal .planner-error',{hasText:'changed'}).waitFor();assert(await page.locator('.modal input[data-context=at-ease]').isChecked());await page.keyboard.press('Escape');
+ checks.push('Editing combination rules in thejaz-criteria.md while the picker is open invalidates saving and retains the selection');
+ const malformed=await page.evaluate(async note=>{const c=app.plugins.plugins['thejaz-planner'].controller,f=app.vault.getAbstractFileByPath(note);const text=(await app.vault.read(f)).replace('replaces | ☁️ | ❄️','unknown | ☁️ | ❄️');await app.vault.modify(f,text);c.ingest(note,text);try{await c.contextForDate('2014-06-03');return '';}catch(e){return e.message;}},CRITERIA_NOTE);
+ assert(malformed.includes('Write a combination rule'));assert.deepEqual(errors,[]);
+ checks.push('Malformed supplied rules block context generation with source-linked guidance instead of falling back to permissive behavior');
+ const version=await page.evaluate(()=>app.plugins.plugins['thejaz-planner'].manifest.version);await writeFile('artifacts/combination-rules.json',JSON.stringify({version,checks,errors},null,2));console.log(JSON.stringify({version,checks,errors},null,2));
+}finally{await browser.close();}

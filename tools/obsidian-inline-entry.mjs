@@ -1,0 +1,85 @@
+import { assertTestVault } from './paths.mjs';
+import { chooseCapture } from './capture-choice.mjs';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { writeFile } from 'node:fs/promises';
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9237');
+const checks = [], errors = [];
+try {
+  const page = browser.contexts().flatMap(c => c.pages()).find(p => p.url().startsWith('app://obsidian.md/'));
+  assert(page);
+  await assertTestVault(page);
+  page.on('pageerror', e => errors.push(e.message));
+  if (await page.locator('.modal').count()) await page.keyboard.press('Escape');
+  await page.evaluate(async () => {
+    const p = app.plugins.plugins['thejaz-planner'], c = p.controller; c.settings.autoUpdate = false;
+    const raw = '## plan for 1 jan 09\n### morning\n- [x] 08:00 (n/a) : awake\n- [x] 09:00 (60) : chp\n- [ ] 10:00 (60) : planned\n\n### afternoon\n- [ ] 12:00 (120) : lunch\n\n### evening\n\n---\nCHP = 60\nSUM = 60\n\nKeep this annotation.\n';
+    const file = app.vault.getAbstractFileByPath('2009-01-01.md');
+    if (file) await app.vault.modify(file, raw); else await app.vault.create('2009-01-01.md', raw);
+    c.ingest('2009-01-01.md', raw);
+    const v = await p.open(); await v.navigate('2009-01-01');
+  });
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner'].controller.timers.size === 0);
+  await page.evaluate(async () => { await app.plugins.plugins['thejaz-planner'].controller.mutation; await app.workspace.getLeavesOfType('thejaz-planner')[0].view.refresh(); });
+  const position = () => page.locator('.planner-capture').evaluate(el => ({
+    previous: el.previousElementSibling?.getAttribute('data-index'), section: el.closest('.planner-section')?.dataset.plannerSection
+  }));
+  assert.deepEqual(await position(), { previous: '1', section: 'morning' });
+  assert.equal(await page.locator('.planner-capture').count(), 1);
+  checks.push('A single composer opens directly after the last completed row inside its section');
+  await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.focusEntry());
+  const quick = page.getByRole('textbox', { name: 'Quick entry', exact: true });
+  await quick.fill('09:30 mdr');
+  await page.locator('.planner-row').nth(0).click();
+  assert.deepEqual(await position(), { previous: '0', section: 'morning' });
+  // Selecting a row collapses the composer at its new place and keeps the draft; reopening shows it.
+  assert.equal(await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.draft), '09:30 mdr');
+  await page.locator('.planner-capture-toggle').click();
+  assert.equal(await quick.inputValue(), '09:30 mdr');
+  assert((await page.locator('.planner-preview').innerText()).includes('(90) : mdr'));
+  checks.push('Clicking another row moves the composer, preserves the draft, and recalculates against that row');
+  await page.locator('.planner-row').nth(1).focus();
+  await page.locator('.planner-row').nth(1).getByRole('button', { name: 'Add below', exact: true }).click();
+  assert(await quick.evaluate(el => el === document.activeElement));
+  assert.deepEqual(await position(), { previous: '1', section: 'morning' });
+  checks.push('Add below puts keyboard focus into the inline field at the requested row');
+  await page.getByRole('button', { name: 'Add activity to afternoon', exact: true }).click();
+  assert.deepEqual(await position(), { previous: '3', section: 'afternoon' });
+  await chooseCapture(page, 'Section for new activity', 'evening');
+  await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.refresh());
+  assert.deepEqual(await position(), { previous: null, section: 'evening' });
+  assert.equal(await quick.inputValue(), '09:30 mdr');
+  checks.push('Section actions and the section selector move to the actual insertion point, including an empty section, and remain there after refresh');
+  // Enter adds; Ctrl+Enter starts another line.
+  await quick.fill('13:00 mdr'); await quick.press('Enter');
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner'].controller.days.get('2009-01-01.md')?.text.includes('13:00 (60) : mdr'));
+  await page.waitForFunction(() => document.querySelector('.planner-capture')?.previousElementSibling?.getAttribute('data-index') === '4');
+  assert.deepEqual(await position(), { previous: '4', section: 'evening' });
+  assert(await page.locator('.planner-row.is-current .planner-add-below').evaluate(el => el === document.activeElement));
+  checks.push('Keyboard submission inserts into the displayed section and focuses the collapsed invitation after the saved row');
+  await page.locator('.planner-row').nth(2).click();
+  await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.focusEntry());
+  await quick.fill('10:30 45 jib'); await quick.press('Enter');
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner'].controller.days.get('2009-01-01.md')?.text.includes('10:30 (45) : jib'));
+  const text = await page.evaluate(() => app.plugins.plugins['thejaz-planner'].controller.port.read('2009-01-01.md'));
+  assert(text.includes('12:00 (120) : lunch') && text.includes('13:00 (60) : mdr') && text.includes('Keep this annotation.'));
+  assert(text.includes('10:00 (60) : planned'));
+  checks.push('Quick entry always inserts after the selected plan, preserving that plan, later rows and annotations');
+  await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.focusEntry());
+  await quick.fill('11:00 chp');
+  await quick.evaluate(el => el.setSelectionRange(3, 7));
+  await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.refresh());
+  assert.deepEqual(await quick.evaluate(el => [el === document.activeElement, el.selectionStart, el.selectionEnd]), [true, 3, 7]);
+  assert.deepEqual(await position(), { previous: '3', section: 'morning' });
+  checks.push('Refresh preserves draft, caret selection, focus, and inline location');
+  await page.locator('.planner-shell').evaluate(el => { el.style.maxWidth = '320px'; });
+  assert(await page.locator('.planner-capture').evaluate(el => el.scrollWidth <= el.clientWidth + 1));
+  await page.locator('.planner-capture').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'artifacts/planner-inline-entry-narrow.png' });
+  await page.locator('.planner-shell').evaluate(el => { el.style.maxWidth = ''; });
+  await page.screenshot({ path: 'artifacts/planner-inline-entry.png' });
+  checks.push('Inline entry wraps within a 320px content area');
+  assert.deepEqual(errors, []);
+  await writeFile('artifacts/planner-inline-entry.json', JSON.stringify({ checks, errors }, null, 2));
+  console.log(JSON.stringify({ checks, errors }, null, 2));
+} finally { await browser.close(); }

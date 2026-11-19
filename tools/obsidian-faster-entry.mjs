@@ -1,0 +1,98 @@
+import { assertTestVault } from './paths.mjs';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { writeFile } from 'node:fs/promises';
+import { plannerUI } from './planner-ui.mjs';
+import { chooseCapture } from './capture-choice.mjs';
+const browser = await chromium.connectOverCDP('http://127.0.0.1:9237');
+const checks = [], errors = [], path = '2016-02-01.md';
+try {
+  const page = plannerUI(browser.contexts().flatMap(c => c.pages()).find(p => p.url().startsWith('app://obsidian.md/')));
+  await page.waitForFunction(() => typeof app !== 'undefined' && app.vault);
+  await assertTestVault(page);
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner']?.controller.indexed || [...document.querySelectorAll('button')].some(b => b.textContent === 'Trust author and enable plugins'));
+  const trust = page.getByRole('button', { name: 'Trust author and enable plugins', exact: true }); if (await trust.count()) await trust.click();
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner']?.controller.indexed);
+  await page.evaluate(() => app.setting.close());
+  page.on('pageerror', e => errors.push(e.message));
+  await page.evaluate(async path => {
+    const p = app.plugins.plugins['thejaz-planner'], c = p.controller; c.settings.autoUpdate = false; c.settings.summaryPath = 'Faster entry verification.md';
+    const summaryText = '### Days\n2016-02-01 = 0 😣\n### Projects\nFRM = 0\n### Results\nDays (2016-02-01 - 2016-02-01): 1d\n';
+    const summaryFile = app.vault.getAbstractFileByPath(c.settings.summaryPath);
+    if (summaryFile) await app.vault.modify(summaryFile, summaryText); else await app.vault.create(c.settings.summaryPath, summaryText);
+    const file = app.vault.getAbstractFileByPath(path), text = '## plan for 1 feb 16\n### morning\n\nFRM = 0\nSUM = 0\nKeep annotation.\n';
+    if (file) await app.vault.modify(file, text); else await app.vault.create(path, text);
+    await c.index(); const v = await p.open(); v.switchMode('day'); v.draft = ''; v.captureOpen = false; await v.navigate('2016-02-01');
+  }, path);
+  const raw = () => page.evaluate(path => app.plugins.plugins['thejaz-planner'].controller.port.read(path), path);
+  const original = await raw();
+  await page.evaluate(() => { app.setting.open(); app.setting.openTabById('thejaz-planner'); });
+  const settings = browser.contexts().flatMap(c => c.pages()).find(p => p.url() === 'about:blank') ?? page;
+  const panel = settings.locator('.planner-entry-settings'); await panel.waitFor();
+  const field = name => panel.getByLabel(name, { exact: true });
+  const initial = await page.evaluate(() => app.plugins.plugins['thejaz-planner'].controller.settings.defaultBlockMinutes);
+  await field('Default block minutes').fill('0'); await panel.getByRole('button', { name: 'Save entry defaults', exact: true }).click();
+  // Save reports beside its button; the section has its own status line too.
+  assert((await panel.locator('[role=status]', { hasText: '1 to 1439' }).count()) === 1);
+  assert.equal(await page.evaluate(() => app.plugins.plugins['thejaz-planner'].controller.settings.defaultBlockMinutes), initial);
+  await field('Default block minutes').fill('45'); await field('Default start time').fill('05:00'); await field('Default start activity').fill('awake');
+  await panel.getByRole('button', { name: 'Save entry defaults', exact: true }).click();
+  assert.equal((await page.evaluate(async () => app.plugins.plugins['thejaz-planner'].loadData())).defaultBlockMinutes, 45);
+  await page.evaluate(() => app.setting.close());
+  assert.equal(await raw(), original);
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner'].controller.timers.size === 0);
+  await page.evaluate(() => { app.plugins.plugins['thejaz-planner'].controller.settings.autoUpdate = true; });
+  checks.push('Settings reject invalid blocks, persist custom block/start/activity together and never seed or modify a note');
+  const row = i => page.locator(`.planner-row[data-index="${i}"]`);
+  const input = () => page.getByRole('textbox', { name: 'Quick entry', exact: true });
+  const open = async index => {
+    if (index === undefined) await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.focusEntry());
+    else { await row(index).locator('.planner-label').click(); await row(index).getByRole('button', { name: 'Add below', exact: true }).click(); }
+  };
+  const count = n => page.waitForFunction(n => app.plugins.plugins['thejaz-planner'].controller.days.get('2016-02-01.md')?.entries.length === n, n);
+  const settled = () => page.evaluate(async () => { await app.plugins.plugins['thejaz-planner'].controller.mutation; });
+  // These checks expect unchecked plans; an earlier helper may have left Log selected.
+  await open(); await chooseCapture(page, 'Entry mode', 'plan'); await input().fill('frm');
+  assert((await page.locator('.planner-preview').innerText()).includes('05:00 (n/a) : awake'));
+  assert((await page.locator('.planner-preview').innerText()).includes('05:45 (45) : frm')); assert.equal(await raw(), original);
+  await input().press('Enter'); await count(2); await settled(); const baseline = await raw();
+  assert(baseline.includes('- [ ] 05:00 (n/a) : awake\n- [ ] 05:45 (45) : frm'));
+  await page.getByRole('button', { name: 'Undo', exact: true }).click(); await count(0); await settled(); assert.equal(await raw(), original);
+  await page.getByRole('button', { name: 'Redo', exact: true }).click(); await count(2); await settled(); assert.equal(await raw(), baseline);
+  checks.push('Bare activity preview uses persisted defaults, adds the visible unchecked baseline on Enter, and one Undo/Redo restores the complete insertion exactly');
+  await open(1); await chooseCapture(page, 'Entry mode', 'log'); await input().fill('50 frm'); await input().press('Enter'); await count(3); await settled();
+  assert((await raw()).includes('- [x] 06:35 (50) : frm'));
+  await open(2); await input().fill('30/50 frm'); await input().press('Control+Enter'); await input().pressSequentially('20-30/50 frm & party'); await input().press('Enter'); await count(5); await settled();
+  assert((await raw()).includes('07:25 (30/50) : frm\n- [x] 08:15 (20-30/50) : frm & party'));
+  checks.push('Duration-based single and Ctrl+Enter batch input advances from the selected endpoint while preserving explicit credit and mixed allocations');
+  await open(4); await input().fill('...\nfrm'); const beforeGap = await raw(); await input().press('Enter');
+  assert.equal(await raw(), beforeGap); assert((await page.locator('.planner-preview-area').innerText()).includes('known time first'));
+  await input().fill('...\n14:00 >\nfrm'); await input().press('Enter'); await count(8); await settled();
+  assert((await raw()).includes('- [ ] ...\n- [ ] 14:00 (n/a) : >\n- [x] 14:45 (45) : frm'));
+  assert.equal(await page.evaluate(path => app.plugins.plugins['thejaz-planner'].controller.days.get(path).entries[5].unknownCredit, path), false);
+  checks.push('Gap plus bare activity rejects the complete batch without writing; explicit re-anchor restores duration entry and the gap has no unknown credit');
+  await open(7); await input().fill('15:15 30/ frm'); await input().press('Enter'); await count(9); await settled(); assert((await raw()).includes('15:15 (30) : frm'));
+  await row(8).locator('.planner-label').click(); await row(8).getByRole('button', { name: 'Edit', exact: true }).click();
+  const editInput = page.getByRole('textbox', { name: 'Edit activity input', exact: true });
+  await editInput.fill('15:35 30/ frm'); await editInput.press('Enter');
+  await page.waitForFunction(() => !document.querySelector('.planner-activity-editor')); assert((await raw()).includes('15:35 (30/50) : frm'));
+  await row(8).getByRole('button', { name: 'Edit', exact: true }).click();
+  await editInput.fill('15:15 30/0 frm'); await editInput.press('Enter');
+  await page.waitForFunction(() => !document.querySelector('.planner-activity-editor')); assert((await raw()).includes('15:15 (30) : frm'));
+  await settled();
+  assert((await raw()).includes('SUM = 175'));
+  const summary = await page.evaluate(() => app.plugins.plugins['thejaz-planner'].controller.port.read('Faster entry verification.md'));
+  assert(summary.includes('2016-02-01 = 175')); assert(summary.includes('FRM = 175'));
+  checks.push('Trailing slash resolves and shortens equal elapsed time in quick entry; the compact editor supports both aliases and preserve unequal credit/elapsed values');
+  await page.screenshot({ path: 'artifacts/faster-entry.png' });
+  await page.evaluate(async () => {
+    for (const leaf of app.workspace.getLeavesOfType('thejaz-planner')) leaf.detach();
+    await app.plugins.disablePlugin('thejaz-planner'); await app.plugins.enablePlugin('thejaz-planner');
+  });
+  await page.waitForFunction(() => app.plugins.plugins['thejaz-planner']?.controller.indexed);
+  assert.equal(await page.evaluate(() => app.plugins.plugins['thejaz-planner'].controller.settings.defaultBlockMinutes), 45);
+  assert((await raw()).includes('Keep annotation.')); assert.deepEqual(errors, []);
+  checks.push('Plugin reload preserves entry settings and parsed source; unrelated prose survives all operations');
+  const version = await page.evaluate(() => app.plugins.plugins['thejaz-planner'].manifest.version);
+  const report = { version, checks, errors }; await writeFile('artifacts/faster-entry.json', JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2));
+} finally { await browser.close(); }

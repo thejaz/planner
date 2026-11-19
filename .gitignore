@@ -1,0 +1,34 @@
+node_modules/
+dist/
+artifacts/
+.test-vault/
+.test-profile/
+coverage/
+*.log
+
+# Local caches and temporary output
+.cache/
+__pycache__/
+*.py[cod]
+*.tsbuildinfo
+/tmp/
+/temp/
+
+# Private inputs and rollback data (reusable synthetic fixtures stay tracked)
+/backups/
+/recovery/
+/tests/private/
+/tests/personal/
+/tests/copied-notes/
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Machine-specific paths and local-only records
+planner.local.json
+docs/local/

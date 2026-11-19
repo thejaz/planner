@@ -1,0 +1,49 @@
+# Rebuild a published release from its tag and attest the release files, so users can verify
+# that main.js, manifest.json and styles.css were built from this repository.
+# Runs after `npm run release` publishes a release; run it by hand to attest an earlier tag.
+name: Attest release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attest, such as 0.2.134
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build from the tag
+        run: |
+          npm ci --ignore-scripts
+          node tools/build.mjs
+      - name: Require the release files to match this build
+        run: |
+          mkdir released
+          gh release download "$TAG" --dir released --pattern main.js --pattern manifest.json --pattern styles.css
+          for file in main.js manifest.json styles.css; do
+            cmp "dist/$file" "released/$file" || { echo "::error::$file in release $TAG differs from the build of its tag"; exit 1; }
+          done
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/main.js
+            dist/manifest.json
+            dist/styles.css

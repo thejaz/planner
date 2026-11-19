@@ -1,0 +1,47 @@
+[
+  {
+    "file": "01-classic-sun.svg",
+    "bounds": {
+      "x": 1.25,
+      "y": 1.25,
+      "right": 22.75,
+      "bottom": 22.75
+    },
+    "scale": 0.9767441860465116,
+    "center": [
+      12,
+      12
+    ],
+    "paintedSize": 21
+  },
+  {
+    "file": "02-minimal-sun.svg",
+    "bounds": {
+      "x": 1.125,
+      "y": 1.125,
+      "right": 22.875,
+      "bottom": 22.875
+    },
+    "scale": 0.9655172413793104,
+    "center": [
+      12,
+      12
+    ],
+    "paintedSize": 21
+  },
+  {
+    "file": "03-microsoft-sun.svg",
+    "bounds": {
+      "x": 2.000002384185791,
+      "y": 2.000004291534424,
+      "right": 30.07260751724243,
+      "bottom": 30.350796222686768
+    },
+    "scale": 0.740720049408032,
+    "center": [
+      12,
+      12
+    ],
+    "paintedSize": 21
+  }
+]
