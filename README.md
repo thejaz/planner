@@ -4,11 +4,6 @@ Plan your day, log what you actually did, and review where your time went, all
 in ordinary Markdown daily notes that stay readable and editable without the
 plugin.
 
-<p>
-  <img src="docs/images/activity.png" alt="Activity view: a day of planned and completed activities with project totals" width="49%">
-  <img src="docs/images/report.png" alt="Report view: totals, group shares, records and day records" width="49%">
-</p>
-
 - **Quick daily planning.** Type `14:30 30 prj` and Planner writes
   `- [ ] 14:30 (30) : prj` into today's note. End times, durations and split
   credit (`20-30/50 wrk & party`) are calculated for you; `now` and `fill` stand
@@ -27,6 +22,16 @@ plugin.
   reference (`?`).
 - **Safe by design.** Every change previews or can be undone, a concurrent edit
   blocks the write, and interrupted operations can be recovered.
+
+## Screenshots
+
+**Activity.** Plan the day, check off what you did, and see credited time per project.
+
+![Activity view: a day of planned and completed activities with project totals](docs/images/activity.png)
+
+**Report.** Totals, group shares, records, and a day-by-day list for any range.
+
+![Report view: totals, group shares, records and day records](docs/images/report.png)
 
 ## Getting started
 
@@ -97,7 +102,9 @@ Keys work while the planner has focus and never while you type in a field.
 
 ## Privacy and data
 
-- Planner makes no automatic network requests and collects no telemetry.
+- Planner makes no network requests and collects no telemetry. Its only web
+  address is a link to the author's GitHub page in Settings, which opens in your
+  browser when you click it.
 - It reads candidate daily notes, summary notes, the shared criteria note and
   routine templates in your vault to recognize planner content. It changes
   planner notes through the actions and automatic totals described in the
