@@ -374,6 +374,7 @@ export class PlannerView extends ItemView {
       const glyph = button.createSpan({ attr: { 'aria-hidden': 'true' } }); setIcon(glyph, icon);
     };
     if (this.mode === 'day') {
+      header.addClass('has-date-navigation');
       const navigation = header.createDiv({ cls: 'planner-date-navigation' });
       iconButton(navigation, 'Previous day', 'chevron-left', () => this.navigate(dateAdd(this.date, -1)), 'previous');
       this.dateField(navigation, this.date, 'Planning date', date => this.navigate(date)).dataset.plannerKey = 'date';
@@ -516,7 +517,7 @@ export class PlannerView extends ItemView {
       groups.get(entry.section)!.push(entry);
     }
     for (const [heading, entries] of groups) {
-      const section = parent.createEl('section', { cls: 'planner-section', attr: { 'aria-label': heading } });
+      const section = parent.createEl('section', { cls: entries.length ? 'planner-section' : 'planner-section is-empty', attr: { 'aria-label': heading } });
       section.dataset.plannerSection = heading;
       section.createEl('h3', { text: heading });
       if (!entries.length) section.createEl('p', { text: 'No activities yet', cls: 'planner-muted' });

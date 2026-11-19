@@ -165,8 +165,13 @@ class PlannerSettings extends PluginSettingTab {
       const option = choices.createEl('label', { cls: 'planner-daily-option' });
       const radio = option.createEl('input', { type: 'radio', attr: { name: 'planner-daily-name', value: kind } });
       radio.checked = name.kind === kind;
+      option.toggleClass('is-checked', radio.checked);
       option.createSpan({ text: label });
+      // The label is styled from classes: the checked choice, and keyboard focus on its radio.
+      const focusRing = () => option.toggleClass('is-focus-visible', radio.matches(':focus-visible'));
+      radio.addEventListener('focus', focusRing); radio.addEventListener('blur', focusRing);
       radio.addEventListener('change', () => {
+        for (const other of Array.from(choices.querySelectorAll<HTMLElement>('.planner-daily-option'))) other.toggleClass('is-checked', other === option ? radio.checked : !!other.querySelector<HTMLInputElement>('input')?.checked);
         if (!radio.checked) return;
         name = { kind, text: kind === 'date' ? '' : affix.value };
         save();

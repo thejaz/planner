@@ -12,7 +12,7 @@ export function reviewSettings(parent: HTMLElement, c: Controller): void {
   };
   new Setting(markers).setName('Show day marker counts').setDesc('Count saved markers in the selected report dates.')
     .addToggle(toggle => toggle.setValue(c.settings.showMarkerCounts).onChange(value => { void update({ showMarkerCounts: value }); }));
-  new Setting(markers).setName('Criteria & Markers note').setDesc(`Shared rules: ${CRITERIA_NOTE}. Without it, built-in ranges apply and custom contexts are unavailable.`);
+  new Setting(markers).setName('Criteria & Markers note').setDesc(`Shared rules: ${CRITERIA_NOTE}. Without it, built-in ranges apply and custom contexts are unavailable.`).setClass('planner-setting-plain');
   const weekend = new Setting(markers).setName('Weekend days').setDesc('Used for weekend markers and bold dates in future summary updates.');
   weekend.settingEl.addClass('planner-weekend-setting');
   weekend.controlEl.addClass('planner-weekend-days');
