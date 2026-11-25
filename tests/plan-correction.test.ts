@@ -52,7 +52,7 @@ describe('optional selected-plan correction', () => {
   it('blocks missing anchors, unknown durations and new boundary conflicts', () => {
     const day=parseDay('- [x] 09:00 (n/a) : anchor\n- [ ] 09:05 (60) : selected\n- [ ] 09:10 (5) : boundary\n','d.md');
     expect(()=>correctPlans(day,[day.entries[0]!],'times')).toThrow('previous');
-    // A following row that would run backwards joins the rebuild (0.2.135), shown in the preview.
+    // A following row that would run backward joins the rebuild (0.2.135), shown in the preview.
     const joined=correctPlans(day,[day.entries[1]!],'times');
     expect([joined.following, joined.change.patches.map(p=>p.after)]).toEqual([1, ['- [ ] 10:00 (60) : selected','- [ ] 10:05 (5) : boundary']]);
     const stuck=parseDay('- [x] 09:00 (n/a) : anchor\n- [ ] 09:05 (60) : selected\n- [ ] 09:10 (?) : boundary\n','d.md');
@@ -80,7 +80,7 @@ describe('optional selected-plan correction', () => {
 
 describe('correction through a mistyped time (0.2.135)', () => {
   const text = '## plan for 19 nov 26\n### morning\n- [x] 06:17 (n/a) : awake\n- [ ] 06:25 (8) : chores\n- [ ] 06:35 (10) : iwbs\n- [ ] 05:23 (20) : breakfast\n- [ ] 05:26 (3) : setup\n- [ ] 06:26 (60) : dbk\n- [ ] 05:35 (12) : preps\n- [ ] 05:55 (20) : commute\n- [ ] 05:58 (3) : setup\n- [ ] ...\n- [ ] 07:00 (10) : later\n\n---\n\nSUM = 0\n';
-  it('rebuilds the selected row and the following rows that would run backwards, then stops', () => {
+  it('rebuilds the selected row and the following rows that would run backward, then stops', () => {
     const day = parseDay(text, '2026-11-19.md'), breakfast = day.entries[3]!;
     const choices = correctionChoices(day, [breakfast]);
     const times = choices.find(c => c.value === 'times')!;
@@ -99,7 +99,7 @@ describe('correction through a mistyped time (0.2.135)', () => {
 });
 
 describe('correction never moves unselected completed rows (review fix)', () => {
-  it('stops before a completed row that would run backwards and says why', () => {
+  it('stops before a completed row that would run backward and says why', () => {
     const day = parseDay('- [x] 09:00 (n/a) : anchor\n- [ ] 09:05 (60) : selected\n- [x] 09:10 (5) : done\n', 'd.md');
     expect(() => correctPlans(day, [day.entries[1]!], 'times')).toThrow(/completed activity after it/);
     const both = correctPlans(day, [day.entries[1]!, day.entries[2]!], 'times');

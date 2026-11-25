@@ -29,7 +29,7 @@ export function combineEntries(day: Day, entries: Entry[], codes: string[] = DEF
     const row = ROW.exec(entry.raw), duration = entry.duration.replace(/\s+/g, '');
     if (!row || entry.time === null) throw new Error(`Line ${entry.line + 1}: combine needs a known end time on every activity.`);
     const match = /^(\d+(?:-\d+)*)(?:\/(\d+))?$/.exec(duration);
-    if (!match || entry.elapsed === null) throw new Error(`Line ${entry.line + 1}: combine needs written minutes; n/a, ? and gaps stay separate.`);
+    if (!match || entry.elapsed === null) throw new Error(`Line ${entry.line + 1}: combine needs written minutes; n/a, ?, and gaps stay separate.`);
     const units = activityGroup(entry.label).units;
     // One amount on a group credits its first activity (`(30) : breakfast & news`), as in notes.
     const written = match[1]!.split('-').map(Number);

@@ -6,7 +6,7 @@ import { parseSummary } from './history';
  * One-time move of a summary's Criteria & Markers section into thejaz-criteria.md.
  * The section runs from its heading to the next `---` or same-level heading; the
  * `---` and the blank lines after it go with it, so the summary starts at its next
- * section. `issues` is non-empty when the summary would read differently afterwards.
+ * section. `issues` is non-empty when the summary would read differently afterward.
  */
 interface CriteriaExtraction { summary: string; section: string; issues: string[] }
 
@@ -41,6 +41,6 @@ export function extractCriteria(text: string, path: string): CriteriaExtraction 
   const before = parseSummary(text, path), after = parseSummary(summary, path, [5], parseMarkerCriteria(section, path));
   const shape = (s: typeof before) => JSON.stringify([s.start, s.end, s.thresholds, s.rows.map(r => [r.date, r.value, s.lines[r.line]!.raw]),
     s.projects.map(p => [p.code, p.value, s.lines[p.line]!.raw])]);
-  if (shape(before) !== shape(after)) issues.push(`${path}: summary rows, projects or thresholds would change.`);
+  if (shape(before) !== shape(after)) issues.push(`${path}: summary rows, projects, or thresholds would change.`);
   return { summary, section, issues };
 }

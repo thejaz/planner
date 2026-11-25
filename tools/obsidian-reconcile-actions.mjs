@@ -33,7 +33,7 @@ try {
   await cards.nth(0).getByRole('button', { name: 'Review totals', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel', exact: true }).last().click();
   assert.equal(await cards.count(), 3);
-  checks.push('Cancelling a daily comparison returns to the same summary list without changing notes');
+  checks.push('Canceling a daily comparison returns to the same summary list without changing notes');
   await cards.nth(0).getByRole('button', { name: 'Review totals', exact: true }).click();
   await page.getByRole('button', { name: 'Use calculated totals', exact: true }).click();
   await page.waitForFunction(() => document.querySelectorAll('.modal .planner-reconcile-issue').length === 2);

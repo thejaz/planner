@@ -122,6 +122,26 @@ function entryText(checked: boolean, time: string, duration: string, label: stri
 const UNKNOWN_TIME_ROW = /^\s*-\s+\[[ xX]\]\s*\?\s*\(/;
 /** An activity with minutes and a name but an unknown end time, unlike a gap or a bare `?`. */
 export function unknownEndTime(entry: Entry): boolean { return entry.time === null && UNKNOWN_TIME_ROW.test(entry.raw); }
+/** A `...` row: a placeholder for activities to come, with no end time or minutes of its own. */
+export function isPlaceholder(entry: Entry | undefined): boolean {
+  return !!entry && entry.time === null && entry.label.trim() === '...' && !unknownEndTime(entry);
+}
+/**
+ * The row a new or edited activity after `entries[index]` measures from (0.3.11): that row,
+ * or, when it is a `...` placeholder, the last row before it. `bridged` says a placeholder
+ * was passed. A restart (`14:00 >`) or an unknown end time (`? (30)`) still stops it.
+ */
+export function measureFrom(entries: readonly Entry[], index: number): { previous: Entry | undefined; bridged: boolean } {
+  let at = index;
+  while (at >= 0 && isPlaceholder(entries[at])) at--;
+  return { previous: at >= 0 ? entries[at] : undefined, bridged: at !== index };
+}
+/** The row `fill` runs up to from before `entries[index]`: that row, or the first after any placeholders. */
+export function fillTarget(entries: readonly Entry[], index: number): Entry | undefined {
+  let at = Math.max(0, index);
+  while (at < entries.length && isPlaceholder(entries[at])) at++;
+  return entries[at];
+}
 /** Every field unknown: `?`, `? ? ?` or `?; ?; ?` is a gap, the same as `...`. */
 const ALL_UNKNOWN = /^\?(?:\s*;?\s*\?)*$/;
 export function requestsElapsed(duration: string): boolean {
@@ -135,7 +155,7 @@ export function resolveDuration(duration: string, previousClock: number | null, 
   const clock = clockMinutes(time);
   if (clock === null) throw new Error('Enter a valid end time before calculating elapsed minutes.');
   const elapsed = intervalBetween(previousClock, clock);
-  if (elapsed === null) throw new Error('The end time moves backwards ambiguously. Correct the time or enter the duration explicitly.');
+  if (elapsed === null) throw new Error('The end time moves backward ambiguously. Correct the time or enter the duration explicitly.');
   // Blank, 0, / and /0 all credit the elapsed minutes.
   if (/^\/?0?$/.test(duration.replace(/\s/g, ''))) return String(elapsed);
   if (hasPercent(duration)) return resolvePercent(duration, elapsed);
@@ -175,13 +195,20 @@ interface QuickOptions extends Partial<EntryDefaults> {
   allowBaseline?: boolean; preserveDuration?: string;
   /** The activity after the insertion point, which `fill` runs up to. */
   following?: Entry;
+  /** `previous` was found by looking past a `...` placeholder (see `measureFrom`). */
+  bridged?: boolean;
 }
 /**
- * A leading `fill` keyword: `fill : task`, `fill; task`, `fill 30/ task` or `fill` alone. A word
- * after it without a colon is an ordinary activity name (`fill water bottles`).
+ * A leading `fill` keyword, an end time like `now` (0.3.9): `fill task`, `fill 30/ task` or
+ * `fill` alone; `fill : task` and `fill; task` still work. Only the whole word counts
+ * (`filler`, `fill-up`). A name that starts with fill begins with a semicolon:
+ * `; fill water bottles`.
  */
-const FILL_START = /^fill(?=\s*(?::|;|$)|\s+[\d./])/i;
-const FILL = /^fill\s*:?\s*/i;
+const FILL_START = /^fill(?=[\s:;]|$)/i;
+/** `fill` followed by a word, which may have been meant as an activity name. */
+const FILL_WORD = /^fill\s+[^\s\d./:;]/i;
+const FILL_NAME_HINT = 'To name an activity that starts with fill, begin with a semicolon: ; fill water bottles.';
+const FILL = /^fill\s*/i;
 /**
  * The end time `fill` stands for (0.2.135): the start of the following activity, its end
  * time less its minutes, so the new row closes the gap after the previous end time.
@@ -202,6 +229,14 @@ const DURATION = String.raw`${AMOUNT}(?:\s*-\s*${AMOUNT})*(?:\s*\/\s*(?:${UNIT_A
 // The order of a source row, `14:30 (30) : prj`, without its punctuation: end time, minutes, activity.
 const QUICK_FIELDS = new RegExp(String.raw`^(?:(now|\d{1,2}:\d{1,2})\s+)?(?:(${DURATION})\s+)?(.+)$`, 'i');
 const TIME_FIELD = /^(?:now|\d{1,2}:\d{1,2})$/i, DURATION_FIELD = new RegExp(`^(?:${DURATION})$`, 'i');
+/**
+ * A colon marks where the name starts, as in a note row `14:30 (30) : prj` (0.3.10):
+ * `14:30 30 : prj`, `now : prj`, `30 : read 2 chapters`, `: fill water bottles`. It counts
+ * only when everything before it is an end time, minutes or nothing, and a space or the
+ * end follows it, so `14:30` and names such as `notes: ch 3` are read as before. A
+ * leading `?` is the end time only when minutes follow it, as by position.
+ */
+const COLON_NAME = new RegExp(String.raw`^(?:(now|\d{1,2}:\d{1,2}|\?(?=\s+[^\s:]))\s*)?(?:(${DURATION})\s*)?:(?:\s+(.*))?$`, 'i');
 /** End time, activity and duration of one entry line. */
 interface EntryFields { time?: string; label: string; duration?: string; separated: boolean }
 /**
@@ -223,6 +258,12 @@ export function entryFields(text: string): EntryFields | null {
     if ((!label && !time && !duration) || (time && !TIME_FIELD.test(time) && !(time === '?' && parts.length === 3)) || (duration && !DURATION_FIELD.test(duration))) return null;
     return { time: time || undefined, label: label || DEFAULT_ACTIVITY, duration: duration ? unitMinutes(duration) : undefined, separated: true };
   }
+  const colon = COLON_NAME.exec(line);
+  if (colon) {
+    const [, time, duration, label] = colon;
+    if (!time && !duration && !label?.trim()) return null;
+    return { time, duration: duration ? unitMinutes(duration) : undefined, label: label?.trim() || DEFAULT_ACTIVITY, separated: true };
+  }
   // By position, a leading ? is the end time only before minutes: `? 30 prj`; `? prj` keeps ? as the minutes.
   const unknownEnd = new RegExp(`^\\?\\s+(${DURATION})\\s+(.+)$`, 'i').exec(line);
   if (unknownEnd) return { time: '?', duration: unitMinutes(unknownEnd[1]!), label: unknownEnd[2]!, separated: false };
@@ -238,6 +279,8 @@ export function entryIssue(raw: string): string | null {
   if (/^[1-9]\d?\.\d{2}\s/.test(line)) return 'write the time with a colon, such as 09:30.';
   const time = /^(\d{1,2}:\d{1,2})\s/.exec(line)?.[1];
   if (time && clockMinutes(time) === null) return `${time} is not a time; use 00:00 to 24:00, such as 09:35.`;
+  // After a colon the name is taken as written, numbers included.
+  if (COLON_NAME.test(line)) return null;
   const rest = line.replace(/^(?:now|\d{1,2}:\d{1,2})\s+/i, ''), words = rest.split(/\s+/), first = words[0] ?? '', last = words.at(-1) ?? '';
   if (/\d\s*[+|]\s*\.?\d/.test(first)) return 'use - between amounts, such as 20-10.';
   if (/^[.\d][\d.-]*\/\d*[a-z]/i.test(first)) return 'put a space after the minutes, such as 30/ prj.';
@@ -277,21 +320,21 @@ export function compactEdit(day: Day, entry: Entry, input: string, nowTime: stri
   options: QuickOptions & { durationTouched?: boolean } = {}): { change: Change; entry: Entry } {
   if (/[\r\n]/.test(input)) throw new Error('Edit one activity at a time. Use Add below for multiple activities.');
   if (input === compactActivity(entry) && !options.durationTouched) return { change: changeOf(day, [], 'Edit activity'), entry };
-  const fields = entryFields(input), previous = day.entries[day.entries.indexOf(entry) - 1];
+  const { previous, bridged } = measureFrom(day.entries, day.entries.indexOf(entry) - 1), fields = entryFields(input);
   const preserved = !options.durationTouched && fields?.duration !== undefined && fields.duration === entry.duration;
   // With no known end time before it, a known end time without minutes saves n/a, as in
   // quick entry; only an explicit elapsed request (/ or 0) needs that earlier end time.
   if (fields?.time && fields.time !== '?' && !preserved && fields.duration !== undefined && requestsElapsed(fields.duration) && previous?.clock == null)
     throw new Error('A previous activity with a known end time is needed to calculate elapsed minutes.');
-  const parsed = quickEntry(input, entry.checked ? 'log' : 'plan', day.entries[day.entries.indexOf(entry) - 1], nowTime, codes,
-    { ...options, allowBaseline: false, preserveDuration: !options.durationTouched ? entry.duration : undefined });
+  const parsed = quickEntry(input, entry.checked ? 'log' : 'plan', previous, nowTime, codes,
+    { ...options, bridged, allowBaseline: false, preserveDuration: !options.durationTouched ? entry.duration : undefined });
   if (parsed.diagnostics.length) throw new EntryInputError(parsed.diagnostics.join(' '), parsed.splits);
   if (parsed.rows.length !== 1) throw new Error('Enter exactly one activity. Use Add below to add activities.');
   const raw = parsed.rows[0]!.replace(/^(-\s+\[)[ xX](\])/, `$1${entry.checked ? 'x' : ' '}$2`);
   const updated = parseDay(raw, '', codes).entries[0];
   if (!updated) throw new Error('Enter a valid activity.');
   let change = changeOf(day, [linePatch(day, entry.line, raw)], 'Edit activity');
-  if (parsed.calculated) change = guardElapsedAnchor(day, change, day.entries[day.entries.indexOf(entry) - 1]);
+  if (parsed.calculated) change = guardElapsedAnchor(day, change, previous);
   return { change, entry: updated };
 }
 export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry | undefined, nowTime: string, codes = DEFAULT_CODES, options: QuickOptions = {}): QuickResult {
@@ -302,6 +345,8 @@ export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry 
   try { validateEntryDefaults(defaults); } catch (error) { return { rows, diagnostics: [(error as Error).message], warnings, calculated: false, splits }; }
   let calculated = false;
   let previousClock = previous?.clock ?? null;
+  // A `...` placeholder holds no time: rows after it measure from the last known end time.
+  let bridged = !!options.bridged;
   const lines = input.split(/\r?\n/), lastLine = lines.reduce((last, line, at) => line.trim() ? at : last, -1);
   for (let [index, raw] of lines.entries()) {
     if (!raw.trim()) continue;
@@ -311,11 +356,14 @@ export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry 
       try {
         const rest = raw.trim().replace(FILL, '');
         raw = `${fillTime(previousClock, options.following)}${rest.startsWith(';') ? '' : rest ? ' ' : ''}${rest}`;
-      } catch (error) { diagnostics.push(`Line ${index + 1}: ${(error as Error).message}`); continue; }
+      } catch (error) {
+        // Without a gap to fill, `fill tank` may have been meant as a name: say how to write one.
+        diagnostics.push(`Line ${index + 1}: ${(error as Error).message}${FILL_WORD.test(raw.trim()) ? ` ${FILL_NAME_HINT}` : ''}`); continue;
+      }
     }
-    // Nothing known is a gap; it breaks the time chain.
+    // Nothing known is a `...` placeholder (0.3.11): the next row still measures from the last end time.
     if (ALL_UNKNOWN.test(raw.trim()) || raw.trim() === '...') {
-      rows.push('- [ ] ...'); previousClock = null; continue;
+      rows.push('- [ ] ...'); bridged = true; continue;
     }
     const anchor = /^(\d{1,2}:\d{1,2})\s*>$/.exec(raw.trim());
     if (anchor) {
@@ -323,9 +371,9 @@ export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry 
       const clock = clockMinutes(anchorTime);
       if (clock === null) { diagnostics.push(`Line ${index + 1}: invalid time.`); continue; }
       if (previousClock !== null && intervalBetween(previousClock, clock) === null)
-        diagnostics.push(`Line ${index + 1}: the end time moves backwards ambiguously.`);
+        diagnostics.push(`Line ${index + 1}: the end time moves backward ambiguously.`);
       rows.push(entryText(false, anchorTime, 'n/a', ANCHOR));
-      previousClock = clock; continue;
+      previousClock = clock; bridged = false; continue;
     }
     const issue = raw.includes(';') ? null : entryIssue(raw);
     if (issue) { diagnostics.push(`Line ${index + 1}: ${issue}`); continue; }
@@ -333,7 +381,7 @@ export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry 
     // Without semicolons, positions decide the fields, so reject lines whose reading would be a guess.
     if (!fields || (!fields.separated && (/^[-&+|/]|[-&+|/]\s*$/.test(fields.label) ||
       (!fields.duration && (/^[.\d]/.test(fields.label) || /\s+[-+]?\d\S*\s*$/.test(fields.label)))))) {
-      diagnostics.push(`Line ${index + 1}: write the end time, the minutes, then the activity: 14:30 30 prj, 30 prj or prj. Semicolons keep numbers in a name: 14:30; 30; read 2 chapters.`); continue;
+      diagnostics.push(`Line ${index + 1}: write the end time, the minutes, then the activity: 14:30 30 prj, 30 prj, or prj. Semicolons keep numbers in a name: 14:30; 30; read 2 chapters.`); continue;
     }
     const joinIssue = nameSeparatorIssue(fields.label) ?? activityGroup(fields.label).issues[0];
     if (joinIssue) { diagnostics.push(`Line ${index + 1}: ${joinIssue}`); continue; }
@@ -355,10 +403,16 @@ export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry 
       catch (error) { diagnostics.push(`Line ${index + 1}: ${(error as Error).message}`); continue; }
       const blocking = parseDay(row, '', codes).diagnostics.filter(d => d.blocks);
       if (blocking.length) diagnostics.push(`Line ${index + 1}: ${blocking.map(d => d.message).join(' ')}`);
-      rows.push(row); previousClock = null; continue;
+      rows.push(row); previousClock = null; bridged = false; continue;
     }
     const match = [raw, fields.time, fields.label, fields.duration] as const;
     const explicit = !!match[1];
+    if (bridged && explicit && previousClock !== null) {
+      // Across a placeholder, an end time before the last known one starts afresh (n/a)
+      // instead of reading as a backward step.
+      const at = clockMinutes(match[1].toLowerCase() === 'now' ? nowTime : match[1]);
+      if (at !== null && intervalBetween(previousClock, at) === null) previousClock = null;
+    }
     let duration = match[3];
     // Percent credit gives one amount per activity: .25/ prj or .5-.5/ pr1 & pr2.
     if (duration && hasPercent(duration)) {
@@ -435,9 +489,9 @@ export function quickEntry(input: string, mode: 'log' | 'plan', previous: Entry 
     else if (needsSplit) diagnostics.push(`Line ${index + 1}: Choose how to divide credit between ${names.join(', ')}. Enter one amount per project, such as ${names.map(() => '35').join('-')}/0, or choose Split equally when available.`);
     else if (parsed.diagnostics.some(d => d.blocks)) diagnostics.push(`Line ${index + 1}: ${parsed.diagnostics.filter(d => d.blocks).map(d => d.message).join(' ')}` +
       (unaccounted && parsed.diagnostics.some(d => d.blocks && d.code === 'unknown-credit') ? ` With nothing timed before it, ${time} has no minutes (n/a). Add them, such as ${time} 30 ${label}${options.allowBaseline ? `, or ${time} / ${label} to count from the configured start` : ''}.` : ''));
-    if (explicit && previousClock !== null && elapsed === null) diagnostics.push(`Line ${index + 1}: the end time moves backwards ambiguously; add an explicit gap and time anchor.`);
+    if (explicit && previousClock !== null && elapsed === null) diagnostics.push(`Line ${index + 1}: the end time moves backward ambiguously; add an explicit gap and time anchor.`);
     rows.push(row);
-    previousClock = clock;
+    previousClock = clock; bridged = false;
   }
   return { rows, diagnostics, warnings, calculated, splits };
 }

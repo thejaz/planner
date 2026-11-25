@@ -52,7 +52,7 @@ try {
   }, { day, summary, text: note(true) });
   assert(deferred.waiting.includes('update automatically')); assert(deferred.unchanged);
   assert(deferred.updated, JSON.stringify(deferred)); assert.equal(deferred.pending, false); assert(!deferred.issue.includes('update automatically'));
-  checks.push('A summary update postponed by indexing completes automatically afterwards, with no Retry needed');
+  checks.push('A summary update postponed by indexing completes automatically afterward, with no Retry needed');
 
   // 3. Adding a project while notes are still being indexed waits for indexing instead of refusing.
   const project = await page.evaluate(async () => {

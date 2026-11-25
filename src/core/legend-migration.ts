@@ -26,7 +26,7 @@ export function migrateLegend(text: string, path: string, weekends = [5]): { cha
     if (!/[🕶☁]/u.test(marks)) continue;
     const contexts = ['🕶', '☁', '✌'].filter(symbol => marks.includes(symbol));
     if (row.value === null || contexts.length !== 1 || updated.rows.filter(r => r.date === row.date).length !== 1) {
-      issues.push(`${path}:${row.line + 1}: unknown minutes, duplicate date or conflicting contexts; row unchanged.`); continue;
+      issues.push(`${path}:${row.line + 1}: unknown minutes, duplicate date, or conflicting contexts; row unchanged.`); continue;
     }
     const symbols = marker(row.value, row.date, marks, updated.thresholds, weekends, updated.criteria);
     const next = formatRowHighlight(replaceRowSymbols(line.raw, symbols), symbols);

@@ -391,8 +391,8 @@ export class Journal {
       const final = new Map<string, WriteRecord>();
       for (const write of writes) final.set(write.path, write);
       for (const write of final.values()) if (!await this.applied(write))
-        throw new Conflict(`Cannot undo: ${write.path} was edited afterwards, and undoing would overwrite that edit.`);
-      await this.checkGuards(operation.guards, path => `Cannot undo: ${path} was edited afterwards, and undoing would overwrite that edit.`);
+        throw new Conflict(`Cannot undo: ${write.path} was edited afterward, and undoing would overwrite that edit.`);
+      await this.checkGuards(operation.guards, path => `Cannot undo: ${path} was edited afterward, and undoing would overwrite that edit.`);
       const inverse = [...writes].reverse().map(invert);
       await this.commit(inverse, `Undo: ${operation.label}`, false, operation.id, undefined, operation.guards);
       return operation;

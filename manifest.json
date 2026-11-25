@@ -1,7 +1,7 @@
 {
   "id": "thejaz-planner",
   "name": "THEJAZ Planner",
-  "version": "0.3.8",
+  "version": "0.3.14",
   "minAppVersion": "1.8.4",
   "description": "Quick daily planning, accurate credits, and compact reviews using your existing plain Markdown.",
   "author": "THEJAZ",

@@ -26,7 +26,7 @@ describe('plan heading 5 oct 26', () => {
 });
 
 describe('a planner day is a plan heading with a SUM total', () => {
-  it('recognises plans and recorded-totals days, whatever their formatting', () => {
+  it('recognizes plans and recorded-totals days, whatever their formatting', () => {
     expect(isPlannerDay('## plan for 5 oct 26\n\n### morning\n\n---\n\nSUM = 0\n')).toBe(true);
     expect(isPlannerDay('## recorded totals\r\n\r\nCHP = 30\r\n**SUM = 30**\r\n')).toBe(true);
     expect(isPlannerDay('﻿## plan for 05.10.26\nSUM = 30[^1]\n')).toBe(true);

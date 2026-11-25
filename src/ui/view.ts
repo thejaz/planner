@@ -1,9 +1,9 @@
-import { ItemView, Scope, setIcon, WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, Scope, setIcon, WorkspaceLeaf } from 'obsidian';
 import type { ViewStateResult } from 'obsidian';
 import { activityGroup, dateAdd, dateFromPath, displayMinutes, orderedCodes } from '../core/model';
 import type { Day, Diagnostic, Entry } from '../core/model';
 import type { EditPart } from '../core/changes';
-import { EntryInputError, applyPatches, unknownEndTime, canMoveEntry, fixHeading, changeOf, refreshedEntryIndex, deleteEntries, compactActivity, compactDuration, compactEdit, editParts, footerPatches, guardElapsedAnchor, insertRows, moveEntry, quickEntry, shiftEntries, toggleEntry } from '../core/changes';
+import { EntryInputError, applyPatches, unknownEndTime, measureFrom, fillTarget, canMoveEntry, fixHeading, changeOf, refreshedEntryIndex, deleteEntries, compactActivity, compactDuration, compactEdit, editParts, footerPatches, guardElapsedAnchor, insertRows, moveEntry, quickEntry, shiftEntries, toggleEntry } from '../core/changes';
 import { calculate, disputed, effectiveTotals, parseDay } from '../core/reader';
 import { rangeFor, review, reviewDescription, summaryPatches, summaryTotals } from '../core/history';
 import type { Review, ReviewRow } from '../core/history';
@@ -427,6 +427,8 @@ export class PlannerView extends ItemView {
         }
         if (path === 'index') action(fixes, 'Rebuild index', () => showRebuild(this.controller), !this.controller.indexing,
           'Read your notes again. This does not change them.');
+        if (path === 'recovery-history') action(fixes, 'Dismiss', () => this.controller.dismissRecoveryNotice(), true,
+          'Hide this message. New edits are protected as usual.');
         if (!fixes.childElementCount) fixes.remove();
       }
       for (const day of affected.values()) {
@@ -454,7 +456,7 @@ export class PlannerView extends ItemView {
     for (const detail of this.contentEl.querySelectorAll<HTMLDetailsElement>('details'))
       if (expanded.has(panelKey(detail))) detail.open = true;
     // Obsidian turns aria-label into a visual tooltip. Keep accessible names
-    // through labelled text without repeating obvious UI labels on hover.
+    // through labeled text without repeating obvious UI labels on hover.
     for (const element of this.contentEl.querySelectorAll<HTMLElement>('[aria-label]'))
       this.accessibleName(element, element.getAttribute('aria-label')!);
     // Redrawing removes the focused control; return focus to its replacement or the view.
@@ -616,7 +618,7 @@ export class PlannerView extends ItemView {
     section.dataset.plannerSectionSelect = '';
     const help = body.createDiv({ cls: 'planner-entry-help' });
     help.createEl('strong', { text: 'End time | minutes | activity (time and minutes optional)' });
-    help.createEl('p', { text: `Times are when an activity ended; the note keeps its minutes in parentheses, such as 14:30 (30) : prj. prj uses ${this.controller.settings.defaultBlockMinutes}m; 50 prj or 1h prj advances; 14:30 30/ prj records elapsed time; 30-0 prj & lunch joins activities; 14:30; 30; prj separates fields. ... leaves a gap; 14:30 > starts again; fill : task ends where the next activity starts. "now" uses ${this.controller.settings.timezone} time.` });
+    help.createEl('p', { text: `Times are when an activity ended; the note keeps its minutes in parentheses, such as 14:30 (30) : prj. prj uses ${this.controller.settings.defaultBlockMinutes}m; 50 prj or 1h prj advances; 14:30 30/ prj records elapsed time; 30-0 prj & lunch joins activities; 14:30; 30; prj separates fields; 14:30 30 : prj marks where the name starts, as in the note. ... is a placeholder, so the next row still counts from the last end time; 14:30 > starts again; fill task ends where the next activity starts (a leading semicolon keeps fill in a name: ; fill tank). "now" uses ${this.controller.settings.timezone} time.` });
     this.entryAnchor = help.createEl('p', { cls: 'planner-entry-anchor', attr: { 'aria-live': 'polite' } });
     const textarea = body.createEl('textarea', { attr: { 'aria-label': 'Quick entry', rows: '1', placeholder: 'prj  |  50 prj  |  14:30 30/ prj  |  14:30; 30; prj  |  ...' } });
     textarea.dataset.plannerKey = 'quick-entry'; textarea.value = this.draft;
@@ -640,21 +642,24 @@ export class PlannerView extends ItemView {
     form.onsubmit = e => { e.preventDefault(); void this.submit().catch(error => this.controller.report(error)); };
     this.updatePreview();
   }
-  private previous(): Entry | undefined {
-    if (!this.day) return undefined;
-    if (this.selected >= 0) return this.day.entries[this.selected];
+  /** The row a new activity measures from, looking past `...` placeholders. */
+  private measure(): { previous: Entry | undefined; bridged: boolean } {
+    if (!this.day) return { previous: undefined, bridged: false };
+    if (this.selected >= 0) return measureFrom(this.day.entries, this.selected);
     const sectionStart = this.day.lines.findIndex(l => l.raw.toLowerCase() === `### ${this.section}`);
-    return [...this.day.entries].reverse().find(e => e.line < sectionStart);
+    return measureFrom(this.day.entries, this.day.entries.findLastIndex(e => e.line < sectionStart));
   }
-  /** The activity right after the insertion point, which `fill` runs up to. */
+  private previous(): Entry | undefined { return this.measure().previous; }
+  /** The activity right after the insertion point, past any placeholders, which `fill` runs up to. */
   private following(): Entry | undefined {
     if (!this.day) return undefined;
-    if (this.selected >= 0) return this.day.entries[this.selected + 1];
+    if (this.selected >= 0) return fillTarget(this.day.entries, this.selected + 1);
     const sectionStart = this.day.lines.findIndex(l => l.raw.toLowerCase() === `### ${this.section}`);
-    return this.day.entries.find(e => e.line > sectionStart);
+    const first = this.day.entries.findIndex(e => e.line > sectionStart);
+    return first < 0 ? undefined : fillTarget(this.day.entries, first);
   }
   private entryOptions() {
-    return { ...this.controller.settings, allowBaseline: !!this.day && !this.day.recordedOnly && this.day.entries.length === 0, following: this.following() };
+    return { ...this.controller.settings, allowBaseline: !!this.day && !this.day.recordedOnly && this.day.entries.length === 0, following: this.following(), bridged: this.measure().bridged };
   }
   private updatePreview(): void {
     if (!this.previews) return;
@@ -777,11 +782,16 @@ export class PlannerView extends ItemView {
       });
     }
     const actions = row.createDiv({ cls: 'planner-row-actions' });
-    const missing = projectLabelParts(entry, this.controller.codesFor(this.day)).unknown;
+    const unknown = projectLabelParts(entry, this.controller.codesFor(this.day)).unknown;
+    // Credited names that are not projects always need attention. An ordinary activity beside a
+    // project is usually deliberate, so it is pointed out only on the first day a name appears,
+    // when it may be a mistyped project (0.3.12).
+    const missing = entry.unknownCredit ? unknown : unknown.filter(code => this.controller.isFirstActivity(code, this.day?.date));
     if (missing.length) {
+      const names = missing.map(code => code.toLowerCase()).join(', ');
       actions.createSpan({ text: entry.unknownCredit
-        ? `Not defined: ${missing.join(', ')}. Add as a project or edit the activity and its amounts.`
-        : `Ordinary activities (not project credit): ${missing.join(', ')}. Add as a project if intended.`, cls: 'planner-project-warning' });
+        ? `Not defined: ${names}. Add as a project or edit the activity and its amounts.`
+        : `New ordinary activity (not project credit): ${names}. Add as a project if intended.`, cls: 'planner-project-warning' });
       for (const code of missing) this.button(actions, `Add ${code} as project`, () => this.controller.addProjectCode(code));
     }
     const add = this.button(actions, 'Add below', () => {
@@ -822,7 +832,27 @@ export class PlannerView extends ItemView {
     remove.disabled = this.day!.legacy;
     for (const [action, button] of Object.entries({ 'add-below': add, edit, shift, correct, combine, duplicate, 'move-up': up, 'move-down': down, delete: remove }))
       button.dataset.plannerRowAction = action;
+    const reasons = actions.createDiv({ cls: 'planner-action-reasons', attr: { 'data-planner-action-reasons': 'true', 'aria-live': 'polite' } });
+    this.updateActionReasons(reasons);
     this.labelRowShortcuts();
+  }
+  /**
+   * With several rows selected, says under the buttons why Shift, Correct or Combine cannot run,
+   * instead of leaving the reason in a hover hint (0.3.12). A single row shows nothing: there the
+   * unavailable actions are expected, and pressing their key shows the reason.
+   */
+  private updateActionReasons(element: HTMLElement): void {
+    element.empty();
+    if (this.selectedRows().length < 2) { element.addClass('planner-hidden'); return; }
+    const correction = this.selectedCorrections();
+    const lines = [
+      ['Shift', this.shiftReason()],
+      // "Nothing to correct" is good news, not a problem; only a correction that fails is explained.
+      ['Correct', correction.some(choice => choice.preview?.change.patches.length) ? '' : correction.find(choice => choice.error)?.error ?? ''],
+      ['Combine', this.combineReason()]
+    ].filter(([, reason]) => reason).map(([action, reason]) => reason!.toLowerCase().startsWith(action!.toLowerCase()) ? reason! : `${action}: ${reason}`);
+    element.toggleClass('planner-hidden', !lines.length);
+    for (const line of lines) element.createDiv({ text: line });
   }
   private labelRowShortcuts(): void {
     for (const button of this.contentEl.querySelectorAll<HTMLButtonElement>('[data-planner-row-action]')) {
@@ -835,6 +865,8 @@ export class PlannerView extends ItemView {
     const button = this.contentEl.querySelector<HTMLButtonElement>(`.planner-row.is-current [data-planner-row-action="${action}"]`);
     // Match a pointer click's focus as well as its handler, so refresh follows a moved activity.
     if (button && !button.disabled) { button.focus({ preventScroll: true }); button.click(); }
+    // A key for an unavailable action says why, rather than doing nothing.
+    else if (button?.disabled && button.title && !button.hasClass('planner-hidden')) new Notice(button.title);
   }
   private clearRowSelection(): void {
     this.selection.clear(); this.selectionAnchor = this.selected >= 0 ? this.selected : null;
@@ -890,6 +922,7 @@ export class PlannerView extends ItemView {
       button.title = available ? 'Preview optional time and duration corrections for the selected plans.' : choices.find(c => c.error)?.error ?? 'Nothing to correct; selected times and durations already agree.';
     }
     for (const button of this.contentEl.querySelectorAll<HTMLButtonElement>('[data-planner-combine]')) this.updateCombine(button);
+    for (const element of this.contentEl.querySelectorAll<HTMLElement>('[data-planner-action-reasons]')) this.updateActionReasons(element);
     this.labelRowShortcuts();
   }
   /** Combine is offered for a range of two or more; its title says why it cannot run. */
@@ -934,7 +967,7 @@ export class PlannerView extends ItemView {
     if (!entry) return;
     const index = day.entries.indexOf(entry);
     const { change } = compactEdit(day, entry, entry.label.trim(), this.controller.now().time, this.controller.codesFor(day),
-      { ...this.controller.settings, durationTouched: true, following: day.entries[index + 1] });
+      { ...this.controller.settings, durationTouched: true, following: fillTarget(day.entries, index + 1) });
     await this.controller.apply(change);
   }
   private combineCache?: { day: Day; key: string; reason: string };
@@ -1038,7 +1071,7 @@ export class PlannerView extends ItemView {
     });
     const previous = day.entries[index - 1];
     body.createEl('p', { cls: 'planner-input-hint', text: unknownEndTime(entry) ? 'End time is unknown. Keep the written minutes, or enter a known endpoint to calculate elapsed time.' : previous?.time
-      ? `The time is when this activity ended; it started at ${previous.time}. Blank, 0 or / credits the elapsed minutes; .25/ credits 25% of them.`
+      ? `The time is when this activity ended; it started at ${previous.time}. Blank, 0, or / credits the elapsed minutes; .25/ credits 25% of them.`
       : 'No previous end time. Enter an endpoint such as 14:00 > in Add below, or write ? 30 buffer for an unknown endpoint.' });
     const suggestions = body.createDiv({ cls: 'planner-suggestions' });
     const preview = body.createDiv({ cls: 'planner-edit-preview', attr: { 'aria-live': 'polite' } });
@@ -1048,7 +1081,7 @@ export class PlannerView extends ItemView {
     const saveButton = controls.createEl('button', { text: 'Save changes', cls: 'mod-cta', attr: { type: 'submit' } });
     this.button(controls, 'Cancel', () => cancel());
     let pending: Promise<boolean> | undefined;
-    const result = () => compactEdit(day, entry, input.value, this.controller.now().time, this.controller.codesFor(day), { ...this.controller.settings, durationTouched, following: day.entries[day.entries.indexOf(entry) + 1] });
+    const result = () => compactEdit(day, entry, input.value, this.controller.now().time, this.controller.codesFor(day), { ...this.controller.settings, durationTouched, following: fillTarget(day.entries, day.entries.indexOf(entry) + 1) });
     const update = () => {
       if (compactDuration(before) !== compactDuration(input.value)) durationTouched = true;
       before = input.value; durationHistory.remember(input.value, durationTouched);
@@ -1134,7 +1167,7 @@ export class PlannerView extends ItemView {
         const name = scheduleNameRange(input.value, ...selection);
         if (name) target = name; else error = message(e);
       }
-      host.setAttribute('aria-description', error || 'Replace the activity name at the caret; keep its time, minutes and context.');
+      host.setAttribute('aria-description', error || 'Replace the activity name at the caret; keep its time, minutes, and context.');
       // Disabled chips say why, visibly, instead of only greying out.
       if (error) host.createEl('p', { text: error, cls: 'planner-suggestion-reason' });
       for (const label of matchHelpers(this.controller.helpersFor(this.day), query)) {
@@ -1369,7 +1402,7 @@ export class PlannerView extends ItemView {
     const count = operations.length;
     new ChoiceDialog(this.app, 'Finish interrupted edits',
       `${count} planner edit${count === 1 ? '' : 's'} stopped partway, for example because Obsidian closed while saving. Your notes are safe: nothing was lost. ` +
-      'Finishing completes the parts marked "not finished". If any note changed since, the planner stops and names it, without writing anything.',
+      'Finishing completes the parts marked "not finished." If any note changed since, the planner stops and names it, without writing anything.',
       'Finish safely', async () => { await this.controller.recover(); }, details, true,
       container => {
         for (const path of new Set(operations.flatMap(o => o.writes.map(w => w.path)).filter(path => !path.startsWith('@'))))

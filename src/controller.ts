@@ -80,6 +80,10 @@ export interface Settings extends EntryDefaults {
 }
 export type GeneralSettings = Partial<Pick<Settings, 'autoUpdate' | 'summaryPath' | 'routinesFolder' | 'timezone' | 'dailyName' | 'activityHelpers'>>;
 type ReviewPreferences = Partial<Pick<Settings, 'projectGroups' | 'weekendDays' | 'showMarkerCounts'>>;
+/** The two alternating recovery snapshots in the plugin folder. */
+const RECOVERY_FILES = ['recovery-0.json', 'recovery-1.json'];
+/** Attention entry for recovery history that could not be read at startup. */
+const RECOVERY_HISTORY = 'recovery-history';
 const DEFAULTS: Settings = {
   ...ENTRY_DEFAULTS,
   summaryPath: 'thejaz-summary-now.md', routinesFolder: 'THEJAZ', lastRoutine: '', dailyName: DATE_ONLY, dailyNamesUsed: [],
@@ -365,16 +369,40 @@ export class Controller {
     this.settings.activityHelpers = upgradedHelpers(this.settings.activityHelpers, loaded.activityHelperDefaultsVersion === 1);
     this.settings.activityHelperDefaultsVersion = 1;
     this.settings.ignoredChecks = stringItems(loaded.ignoredChecks);
-    const copies = await Promise.all([this.readJson('recovery-0.json'), this.readJson('recovery-1.json')]);
+    const copies = await Promise.all(RECOVERY_FILES.map(name => this.readJson(name)));
     const valid = copies.filter((v): v is { sequence: number; snapshot: string; checksum: number } => {
       const x = v as { sequence?: number; snapshot?: string; checksum?: number } | null;
       return !!x && Number.isFinite(x.sequence) && typeof x.snapshot === 'string' && x.checksum === checksum(x.snapshot);
     }).sort((a, b) => b.sequence - a.sequence);
     if (valid[0]) { this.recoverySequence = valid[0].sequence; await this.journal.load(JSON.parse(valid[0].snapshot)); }
-    else await this.journal.load(null);
+    else { await this.journal.load(null); await this.setAsideUnreadableRecovery(); }
     this.syncRecoveryIssue();
     this.initialized = true;
   }
+  /**
+   * Recovery files exist but none can be read (0.3.13). Starting with empty history keeps the
+   * notes safe, but say so, and copy the unreadable files aside before new history replaces them.
+   * Only once both are copied is a fresh snapshot written, so the next start is quiet; if a copy
+   * fails, the files are left for a restart to try again.
+   */
+  private async setAsideUnreadableRecovery(): Promise<void> {
+    const adapter = this.app.vault.adapter, present: string[] = [];
+    for (const name of RECOVERY_FILES) if (await adapter.exists(`${this.config}/${name}`)) present.push(name);
+    if (!present.length) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    let kept = true;
+    for (const name of present) {
+      try { await adapter.copy(`${this.config}/${name}`, `${this.config}/${name.replace('recovery-', `recovery-unreadable-${stamp}-`)}`); }
+      catch { kept = false; }
+    }
+    if (kept) try { await this.persistJournal(this.journal.data); } catch { /* The next edit writes it. */ }
+    const lost = 'The planner\'s recovery history could not be read, so an edit interrupted before Obsidian started cannot be finished or undone here. Your notes are unchanged.';
+    this.issues.set(RECOVERY_HISTORY, kept
+      ? `${lost} New edits are protected as usual, and the unreadable files were kept in the plugin folder as recovery-unreadable files. Choose Dismiss.`
+      : `${lost} The files were left as they are; restart Obsidian before making changes to try reading them again.`);
+  }
+  /** Hides the unreadable-recovery message; it explains, and has nothing left to fix. */
+  dismissRecoveryNotice(): void { if (this.issues.delete(RECOVERY_HISTORY)) this.emit(); }
   async saveSettings(): Promise<void> { await this.plugin.saveData(this.settings); }
   /** Settings tab edits share the mutation queue so project recovery never merges a half-applied value. */
   async updateSettings(changes: GeneralSettings): Promise<void> {
@@ -507,7 +535,7 @@ export class Controller {
   private transferScopeText(): string { return JSON.stringify({ summaryPath: this.settings.summaryPath, routinesFolder: this.settings.routinesFolder, files: this.transferFiles() }); }
   private checkTransferScope(operation: Operation | null): void {
     const checkpoint = operation?.writes.find(w => w.path === PROJECT_SOURCES_PATH);
-    if (checkpoint && checkpoint.after !== this.transferScopeText()) throw new Conflict('Notes or templates were added, removed or renamed since this project change. Put them back before finishing or undoing it.');
+    if (checkpoint && checkpoint.after !== this.transferScopeText()) throw new Conflict('Notes or templates were added, removed, or renamed since this project change. Put them back before finishing or undoing it.');
   }
   private transferTransition(operation: Operation | null, undo = false): { from: string; to: string } | undefined {
     let label = operation?.label ?? '';
@@ -810,6 +838,8 @@ export class Controller {
   remove(path: string): void { if (this.criteriaNotes.delete(path)) this.reparseSummaries(); this.days.delete(path); this.summaries.delete(path); this.routinePaths.delete(path); this.routineSummaries.delete(path); this.emit(); this.scheduleCache(); }
   private isTemplate(path: string): boolean { return isRoutine(path, this.settings.routinesFolder) && !this.routineSummaries.has(path); }
   rename(oldPath: string, file: TFile): void {
+    // A summary paused by the overwrite guard stays paused under its new name.
+    if (this.pausedSummaries.delete(oldPath)) this.pausedSummaries.add(file.path);
     let settingsChanged = false;
     if (this.settings.summaryPath === oldPath) { this.settings.summaryPath = file.path; settingsChanged = true; }
     if (settingsChanged) void this.enqueue(() => this.saveSettings()).catch(error => this.report(error));
@@ -1289,7 +1319,7 @@ export class Controller {
   async setContext(date: string, value: DayContext, expected?: ContextSnapshot): Promise<void> {
     await this.enqueue(async () => {
       const fresh = await this.contextForDate(date);
-      if (expected && fresh.token !== expected.token) throw new Conflict('The summary row, period or legend changed. Your choice is retained; cancel and reopen Day context to review the current data.');
+      if (expected && fresh.token !== expected.token) throw new Conflict('The summary row, period, or legend changed. Your choice is retained; cancel and reopen Day context to review the current data.');
       if (value === fresh.current && value !== 'multiple') return;
       const { summary, criteria, source, sourceText } = fresh, path = summary.path, text = summary.text;
       const patch = contextPatch(summary, date, value, criteria);

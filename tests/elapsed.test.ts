@@ -48,7 +48,7 @@ describe('elapsed-time input shortcuts', () => {
   it('rejects missing, unknown, invalid and ambiguous anchors', () => {
     expect(() => resolveDuration('0', null, '14:30')).toThrow('previous activity');
     expect(() => resolveDuration('95/0', 585, '25:00')).toThrow('valid end time');
-    expect(() => resolveDuration('95/0', 900, '14:30')).toThrow('backwards ambiguously');
+    expect(() => resolveDuration('95/0', 900, '14:30')).toThrow('backward ambiguously');
     const day = parseDay('- [x] 09:45 (n/a) : awake\n- [ ] ?\n- [ ] 14:30 (200) : chp');
     expect(() => editEntry(day, day.entries[2]!, '14:30', '0', 'chp')).toThrow('previous activity');
   });

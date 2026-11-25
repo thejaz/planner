@@ -22,7 +22,7 @@ change the owner's notes. `AGENTS.md` is the shared contributor contract, and
    commit those changes. If they prevent a safe task-owned commit, report why.
 
 2. Make the agreed change and run its relevant checks. Use `npm run check` for
-   typechecking, core/recovery tests and the build. Interaction or storage changes
+   typechecking, core/recovery tests, and the build. Interaction or storage changes
    also require meaningful native checks in the isolated synthetic vault, as
    described in `AGENTS.md`. Record any outstanding verification honestly.
 
@@ -42,7 +42,7 @@ change the owner's notes. `AGENTS.md` is the shared contributor contract, and
    git log -1 --oneline
    ```
 
-5. Hand off the commit hash, verification results and remaining uncommitted files
+5. Hand off the commit hash, verification results, and remaining uncommitted files
    (or state that the tree is clean). If a commit fails, explain the reason and
    what remains uncommitted. Do not rewrite history or discard someone else's
    work without explicit user authorization.
@@ -52,10 +52,10 @@ These are contributor instructions; no background auto-committer is installed.
 
 ## Repository boundaries
 
-Track source, documentation, configuration, design assets, the lockfile and
+Track source, documentation, configuration, design assets, the lockfile, and
 reusable synthetic tests. `.gitignore` excludes installed dependencies, generated
 builds/artifacts, isolated vaults/profiles, private test inputs, recovery folders,
-caches, logs and common secret files. Review new paths before staging: an ignore
+caches, logs, and common secret files. Review new paths before staging: an ignore
 rule is not a substitute for checking content. Keep copied notes and recovery data
 in ignored local output locations or outside the project. Never force-add them.
 Installed `node_modules` and the useful current `dist` build remain on disk.

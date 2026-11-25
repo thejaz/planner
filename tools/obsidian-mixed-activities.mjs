@@ -39,7 +39,7 @@ try {
   assert.deepEqual(state, { credit: { FRM: 60 }, unknown: false, conflicts: [] });
   assert((await page.locator('.planner-total-line').innerText()).includes('5h 45m'));
   assert.equal(await row().locator('.planner-unknown-project').count(), 0);
-  assert((await row().locator('.planner-project-warning').innerText()).includes('Ordinary activities'));
+  assert((await row().locator('.planner-project-warning').innerText()).includes('New ordinary activity (not project credit): party.'));
   assert(await row().getByRole('button', { name: 'Add PARTY as project', exact: true }).isVisible());
   assert.equal(await raw(path), original); assert.equal(await raw(summary), originalSummary);
   await page.screenshot({ path: 'artifacts/mixed-activities.png' });
@@ -74,6 +74,19 @@ try {
   await page.evaluate(async () => { await app.plugins.plugins['thejaz-planner'].controller.mutation; });
   assert((await raw(path)).includes('5 - 5 / 10')); assert((await raw(path)).includes('Keep this annotation.'));
   checks.push('Quick entry refuses an ambiguous missing amount without writing, accepts corrected spaced components/allocation with Enter and preserves unrelated prose');
+  // 0.3.12: once an earlier day uses party, the row beside a project is not pointed out again.
+  const earlier = '2011-03-31.md';
+  await page.evaluate(async earlier => {
+    const c = app.plugins.plugins['thejaz-planner'].controller;
+    await app.vault.create(earlier, '## plan for 31 mar 11\n### evening\n- [x] 20:00 (n/a) : awake\n- [x] 21:00 (60) : party\nSUM = 0\n');
+    await c.index(); await c.whenIdle();
+    const v = app.workspace.getLeavesOfType('thejaz-planner')[0].view; await v.navigate('2011-04-01');
+  }, earlier);
+  await row().locator('.planner-label').click();
+  assert.equal(await row().locator('.planner-project-warning').count(), 0);
+  assert.equal(await row().getByRole('button', { name: 'Add PARTY as project', exact: true }).count(), 0);
+  await page.evaluate(async earlier => { await app.vault.delete(app.vault.getAbstractFileByPath(earlier)); }, earlier);
+  checks.push('A familiar ordinary activity beside a project (party, used on an earlier day) shows no notice or add-as-project button');
   assert.deepEqual(errors, []);
   const version = await page.evaluate(() => app.plugins.plugins['thejaz-planner'].manifest.version);
   await writeFile('artifacts/mixed-activities.json', JSON.stringify({ version, checks, errors }, null, 2)); console.log(JSON.stringify({ version, checks, errors }, null, 2));

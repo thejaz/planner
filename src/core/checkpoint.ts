@@ -10,7 +10,7 @@ export function checkpointIssues(days: Day[], summaries: Summary[], dates: Set<s
   for (const date of dates) {
     const matches = days.filter(day => day.date === date);
     if (matches.length !== 1 || disputed(matches[0]!)) {
-      issues.push(`${date}: this day's note is missing, duplicated or has conflicting totals. Open it, fix it, then choose Check again.`); continue;
+      issues.push(`${date}: this day's note is missing, duplicated, or has conflicting totals. Open it, fix it, then choose Check again.`); continue;
     }
     if (date > through) { issues.push(`${date}: this date is in the future, so its summary check cannot run yet.`); continue; }
     try {

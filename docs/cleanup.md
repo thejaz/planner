@@ -3,15 +3,15 @@
 ## Keep the project ready for future development
 
 After each version, remove disposable clutter using the Windows Recycle Bin.
-Do not treat a file as disposable merely because its name contains "test".
+Do not treat a file as disposable merely because its name contains "test."
 
 Always retain:
 
 - The complete `.git` directory, including local commit history and configuration.
   Never recycle or recreate it as cleanup ballast; keep Git maintenance separate
   from disposable-output cleanup. See `git-workflow.md` for handoffs.
-- Source, reusable tests, synthetic fixtures and development/verification tools.
-- Configuration, package.json, package-lock.json, guides and project instructions.
+- Source, reusable tests, synthetic fixtures, and development/verification tools.
+- Configuration, package.json, package-lock.json, guides, and project instructions.
 - Installed `node_modules` for future builds, and the useful current `dist` build.
 - Necessary recovery backups and verification evidence. Summarize completed
   checks and remaining limitations in the release verification document before
@@ -19,7 +19,7 @@ Always retain:
 
 Candidates for cleanup after verification include disposable `.test-vault` and
 `.test-profile` runs, temporary scripts, screenshots, audit output, package
-staging, temporary archive-restoration folders and obsolete generated builds.
+staging, temporary archive-restoration folders, and obsolete generated builds.
 Keep reusable test scripts and synthetic fixtures. Review older releases and
 backups individually; do not discard the only useful recovery copy.
 
@@ -28,7 +28,7 @@ intended project or explicitly identified temporary directory. Reject directory
 links and unexpected paths. Close only the isolated Obsidian process associated
 with this project's `.test-profile` when necessary. Use Windows Recycle Bin
 operations; if recycling fails, stop rather than permanently deleting instead.
-The owner's working vault, installed plugin data and unrelated folders are
+The owner's working vault, installed plugin data, and unrelated folders are
 outside cleanup scope.
 
 ## Desktop archives: only when requested
@@ -48,7 +48,7 @@ Desktop deliveries; the internal packaging filename below remains unchanged.
 
 Procedure:
 
-1. Confirm package.json, package-lock.json and manifest.json agree on the version.
+1. Confirm package.json, package-lock.json, and manifest.json agree on the version.
    Run `npm run check` and the meaningful isolated native checks required for the
    changes. Record results and any unverified behavior honestly.
 2. Run `npm run package` to create
@@ -56,22 +56,22 @@ Procedure:
    paths first: this helper overwrites its generated ZIP. Preserve any differing
    archive that is still needed before running it.
 3. Verify that the plugin ZIP contains exactly these six files under
-   `thejaz-planner/`: main.js, manifest.json, styles.css, README.md, LICENSE and
+   `thejaz-planner/`: main.js, manifest.json, styles.css, README.md, LICENSE, and
    docs/maintaining.md. Check ZIP integrity and byte equality of the three runtime
    files against the tested `dist` build. Copy the verified ZIP to the Desktop
    using `YYYY-MM-DD - planner-plugin - v<version>.zip`.
 4. Create the source ZIP with a `planner/` root containing the complete `src`,
-   `tests`, `tools` and `docs` directories plus .gitignore, AGENTS.md, LICENSE,
+   `tests`, `tools`, and `docs` directories plus .gitignore, AGENTS.md, LICENSE,
    manifest.json, package-lock.json, package.json, README.md, styles.css,
-   tsconfig.json, eslint.config.mjs and vitest.config.ts. Review any new development files and
+   tsconfig.json, eslint.config.mjs, and vitest.config.ts. Review any new development files and
    include them when needed. Include only synthetic fixtures. Name this Desktop
    archive `YYYY-MM-DD - planner-project - v<version>.zip`.
 5. Exclude node_modules, dist, artifacts, copied vaults/profiles, caches, logs,
-   personal notes, private fixtures, audit output and recovery data from the
+   personal notes, private fixtures, audit output, and recovery data from the
    source ZIP. Dependencies remain installed in the working project; the ZIP
    preserves the manifest and lockfile needed to restore them.
 6. Verify ZIP integrity and compare source entries with the intended current
-   files. Restore into a separate temporary folder, run `npm ci`, `npm run setup:lint` and
+   files. Restore into a separate temporary folder, run `npm ci`, `npm run setup:lint`, and
    `npm run check`, and compare rebuilt runtime files with the plugin ZIP.
    Report any check that cannot be completed.
 7. Never silently overwrite a differing Desktop ZIP. Preserve the existing copy

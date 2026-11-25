@@ -85,7 +85,7 @@ try {
  const dateInput=page.locator('input[type=date]'); await dateInput.fill('2007-01-02'); await dateInput.dispatchEvent('change');
  await page.getByRole('button',{name:'Stay',exact:true}).click(); assert.equal(await dateInput.inputValue(),'2007-01-01');
  await editor.getByRole('button',{name:'Cancel',exact:true}).click(); await finished();
- checks.push('Cancelled date navigation retains both selected date and edit draft');
+ checks.push('Canceled date navigation retains both selected date and edit draft');
  await row(1).locator('.planner-label').click(); await row(1).getByRole('button',{name:'Add below',exact:true}).click();
  const addInput=page.getByRole('textbox',{name:'Quick entry',exact:true}); await addInput.fill('25 frm');
  await row(1).getByRole('button',{name:'Edit',exact:true}).click(); await editor.waitFor(); await input.fill('09:50 20 frm');

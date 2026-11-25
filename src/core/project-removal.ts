@@ -58,7 +58,7 @@ export function removeProject(documents: { path: string; text: string }[], input
       if (day.diagnostics.some(d => d.code === 'invalid-total')) result.blockers.push(`${doc.path}: a total in this note cannot be read. Fix it before deleting work.`);
       if (day.recordedSum !== null) {
         const sum = day.footers.find(f => f.code === 'SUM');
-        if (!sum || sum.numberStart < 0 || day.recordedSum < removed) result.blockers.push(`${doc.path}: the SUM line is missing, unreadable or too small. Fix it before deleting work.`);
+        if (!sum || sum.numberStart < 0 || day.recordedSum < removed) result.blockers.push(`${doc.path}: the SUM line is missing, unreadable, or too small. Fix it before deleting work.`);
         else {
           const next = day.recordedSum - removed; sums.set(date, next);
           if (removed) patches.push(patch(doc.text, sum.numberStart, sum.numberEnd, String(next)));

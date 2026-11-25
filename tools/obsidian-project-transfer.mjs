@@ -76,7 +76,7 @@ try {
  await page.waitForFunction(()=>app.plugins.plugins['thejaz-planner']?.controller.indexed);
  const recovered=await page.evaluate(async()=>{
   const c=app.plugins.plugins['thejaz-planner'].controller;const f=app.vault.getAbstractFileByPath('2001-02-02.md'),text=await c.port.read(f.path);
-  const extra=await app.vault.create('THEJAZ/archive/recovery-list-change.md','- [ ] 09:00 (10) : xold\n');let listBlocked=false;try{await c.recover();}catch(e){listBlocked=e.message.includes('added, removed or renamed');}await app.fileManager.trashFile(extra);
+  const extra=await app.vault.create('THEJAZ/archive/recovery-list-change.md','- [ ] 09:00 (10) : xold\n');let listBlocked=false;try{await c.recover();}catch(e){listBlocked=e.message.includes('added, removed, or renamed');}await app.fileManager.trashFile(extra);
   await app.vault.modify(f,text+'Concurrent recovery edit.\r\n');let blocked=false;try{await c.recover();}catch{blocked=true;}await app.vault.modify(f,text);
   await c.recover();const success=c.projectCodes().includes('XREN')&&!c.projectCodes().includes('XOLD')&&c.settings.projectEmojis.XREN==='🌱';await c.undo();return {blocked,listBlocked,success,undone:c.projectCodes().includes('XOLD')&&(await c.port.read('2001-02-01.md')).includes('XOLD = 35')};
  });assert(recovered.blocked&&recovered.listBlocked&&recovered.success&&recovered.undone);checks.push('After restart, changed source text or file membership blocks recovery; restoring them permits recovery and exact grouped Undo');

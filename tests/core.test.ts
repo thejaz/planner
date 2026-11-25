@@ -131,7 +131,7 @@ describe('unknowns, time, and fallback', () => {
     expect(calculate(day).sum).toBe(0);
     expect(calculate(day).complete).toBe(false);
   });
-  it('preserves explicit credits and detects ambiguous backwards times', () => {
+  it('preserves explicit credits and detects ambiguous backward times', () => {
     const day = parseDay('- [x] 23:30 (50) : break\n- [x] 00:10 (40) : chp\n- [x] 01:35 (40) : mdr');
     expect(day.entries[1]!.interval).toBe(40);
     expect(day.entries[2]!.interval).toBe(85);

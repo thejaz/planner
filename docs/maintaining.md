@@ -11,7 +11,7 @@ manifest for exact rollback; do not invoke old plugin Undo across the migration.
 ## Marker legends and deliberate local migration
 
 `src/core/marker-rules.ts` owns legend parsing, canonical vocabulary, recorded
-marker extraction and classification. Reports, summary thresholds and contexts
+marker extraction, and classification. Reports, summary thresholds, and contexts
 share these definitions. Leading row markers are separate from annotation emojis.
 Only 😣 receives whole-row highlighting; planned contexts suppress no-pro faces.
 
@@ -19,7 +19,7 @@ Only 😣 receives whole-row highlighting; planned contexts suppress no-pro face
 `--prepare` copies the exact 11 matching summaries into the isolated test vault's
 hidden migration folder and verifies patches/amounts/bold. `--verify-native`
 round-trips those copies through isolated Obsidian storage. Only `--apply` writes
-the originals, after native verification, full-scope/content preflight and
+the originals, after native verification, full-scope/content preflight, and
 verified backups outside the project. It rechecks each original before atomic
 replacement and retains rollback copies plus reports. Never package staged
 personal notes or invoke the migration automatically. Changed scope/content
@@ -39,7 +39,7 @@ pre-change evidence before touching a note. Writes are stored as edits
 (`src/storage/journal.ts`): daily and small notes keep their prior text, large
 notes only edits plus fingerprints of both sides, completed from the current note
 when it matches one side. Guarded unchanged notes are fingerprints. Finished
-history is bounded by 100 operations, 30 days and `HISTORY_BUDGET`.
+history is bounded by 100 operations, 30 days, and `HISTORY_BUDGET`.
 
 Open editors use an editor transaction followed by the public view `save()`.
 Background writes use `Vault.process()`. Rebase only when unchanged surrounding
@@ -79,16 +79,16 @@ creates and verifies the installable ZIP, so pass it only when one was requested
 
 `node tools/install-local.mjs` is the local development installer. It requires
 the exact build already exercised in the isolated native vault, verifies a
-release ZIP when present, backs up the previous runtime and guards note/settings
+release ZIP when present, backs up the previous runtime, and guards note/settings
 hashes. A local update does not require creating an archive.
 
 `node tools/migrate-plugin-id.mjs [--vault <dir>] [--backups <dir>] [--dry-run]`
 moves an installation from the pre-0.2.85 `plain-planner` ID to `thejaz-planner`.
 It refuses while any running Obsidian profile has the vault open, backs up the old
 plugin folder and the Obsidian lists it rewrites (enabled plugins, workspace,
-hotkeys), copies settings, recovery records and the index with hash checks,
+hotkeys), copies settings, recovery records, and the index with hash checks,
 installs `dist`, and recycles the old folder last. A second run reports "Already
-moved". Rehearse it on a vault copy before the owner vault.
+moved." Rehearse it on a vault copy before the owner vault.
 
 If Windows networking stalls on an initial dependency fetch, run npm's CLI
 with Node's `--dns-result-order=ipv4first` option. Do not change system network
@@ -106,13 +106,13 @@ inspect it for report writes first.
 ## Native verification
 
 `obsidian-settings-section-tooltips.mjs` checks that Settings sections, dynamic
-project controls and dialogs retain accessible names and keyboard focus without
+project controls, and dialogs retain accessible names and keyboard focus without
 black Obsidian hover bubbles. Smaller native title hints remain; no settings or
 notes are changed by the check.
 `obsidian-settings-feedback.mjs` checks grouped settings, save/error feedback,
 index results and no-op states, successful Undo and summary sync, helper reset,
 keyboard focus in the separate Settings window, project-dialog Cancel, and
-light/dark narrow layouts. It restores its synthetic settings, journal and notes.
+light/dark narrow layouts. It restores its synthetic settings, journal, and notes.
 `openSettingsDialog` in `src/ui/settings-feedback.ts` keeps dialogs in the triggering
 control's document, preserves focused inputs, and removes local keyboard handlers
 on close. The result helpers do not treat an index's caught error or an unresolved
@@ -121,15 +121,15 @@ descriptions already explain the action.
 
 `obsidian-group-spacing.mjs` verifies compact group rows, aligned name/actions,
 no overflow at three window widths, and working rename/remove controls.
-`obsidian-weekend-layout.mjs` checks Monday-first ordering, responsive alignment
+`obsidian-weekend-layout.mjs` checks Monday-first ordering, responsive alignment,
 and correct weekday IDs without changing the saved weekend selection.
 `obsidian-review-shares.mjs` checks work/day percentage denominators across all
 presets, custom ranges, filters, context overlaps, missing totals, aggregate-only
-records and light/dark narrow layouts. Shares are presentation only.
+records, and light/dark narrow layouts. Shares are presentation only.
 
 `obsidian-compact-edit.mjs` checks the single compact editor, literal-zero
 preservation, row count/status, prompts, drafts, conflict retention, Undo/Redo,
-Add below and narrow light/dark layouts. `obsidian-inline-edit.mjs` remains an
+Add below, and narrow light/dark layouts. `obsidian-inline-edit.mjs` remains an
 alias for that replacement suite; the dialog and three-field editor are removed.
 Editing uses a pinned source snapshot and skips background redraws while open.
 Only explicit Save changes writes; leaving dirty edits prompts Save/Discard/Stay.
@@ -158,17 +158,17 @@ The helpers verify the exact test-vault path before operating:
 - `obsidian-row-shortcuts.mjs`: all eight single-key row actions, visible key
   hints, multi-selection, disabled controls, move focus, exact Undo/Redo, typing
   and Report guards, held keys, unsaved drafts, quiet accessible editor labels,
-  Help, uniform shortcut alignment and narrow toolbar wrapping.
+  Help, uniform shortcut alignment, and narrow toolbar wrapping.
 - `obsidian-input-panel-alignment.mjs`: exact blank-day label, routine casing
   and selection, full-width create-day field/footer spacing, Add/Edit row-edge
-  alignment, responsive options and unchanged notes after cancellation.
+  alignment, responsive options, and unchanged notes after cancellation.
 - `obsidian-project-ranking.mjs`: numbered report projects, descending order,
   responsive equal-width columns, aligned numeric fields, light/dark and narrow
-  layouts, filtering, chip management and unchanged synthetic notes.
+  layouts, filtering, chip management, and unchanged synthetic notes.
 - `obsidian-apply-hints.mjs`: project remove and rename/merge dialogs always
   explain an unavailable apply button; nothing is applied.
 - `obsidian-edit-selection.mjs`: opening the activity editor selects the
-  double-clicked time, minutes or activity; Edit, E, Enter and F2 select the end
+  double-clicked time, minutes, or activity; Edit, E, Enter, and F2 select the end
   time and minutes together.
 - `obsidian-stale-summary.mjs`: a summary changed outside the index is re-read
   instead of blocking actions; identical errors show one pop-up.
@@ -207,46 +207,46 @@ The helpers verify the exact test-vault path before operating:
   grouped note writes/undo, duplicate retries, manually reordered summary totals,
   and actionable errors without touching unrelated text.
 - `obsidian-header-buttons.mjs`: visible button shapes, equal heights in light
-  and dark themes, keyboard focus/navigation and narrow header wrapping.
+  and dark themes, keyboard focus/navigation, and narrow header wrapping.
 - `obsidian-review-ranges.mjs`: default summary range, exact rolling boundaries
   through today despite historical selection, inclusive denominators, all indexed
-  history, manual dates and missing-summary recovery.
+  history, manual dates, and missing-summary recovery.
 - `obsidian-action-sections.mjs`: action icons/section dividers, Undo/Redo state,
-  exact source restoration, keyboard shortcuts, narrow wrapping and redo branching.
+  exact source restoration, keyboard shortcuts, narrow wrapping, and redo branching.
 - `obsidian-project-removal.mjs`: read-only bulk previews, unlink/delete semantics,
-  grouped Undo/Redo, zero-chip cleanup and stale-preview rejection. Run only in
+  grouped Undo/Redo, zero-chip cleanup, and stale-preview rejection. Run only in
   the isolated vault; never use owner notes for bulk-removal validation.
 - `obsidian-project-colors-order.mjs`: distinct pastel chip colors in both themes
   and on hover, retained management clicks, descending Day/Review totals, and
   byte-exact summary sorting/Undo/Redo preserving values and surrounding text.
 - `obsidian-capture-controls.mjs`: fresh Plan default and unchecked submission,
   themed menus/keyboard access, consistent icons, draft/section preservation,
-  close-icon centering and narrow wrapping. `capture-choice.mjs` selects these
+  close-icon centering, and narrow wrapping. `capture-choice.mjs` selects these
   native-menu controls in helpers; logging tests must explicitly choose Log.
-- `obsidian-branding.mjs`: THEJAZ Planner manifest, commands, settings credit/link
-  and the selected sun SVG rendering, centering and theme colors in the ribbon
+- `obsidian-branding.mjs`: THEJAZ Planner manifest, commands, settings credit/link,
+  and the selected sun SVG rendering, centering, and theme colors in the ribbon
   and tab. The standalone editable artwork is `src/assets/thejaz-sun.svg`;
   `src/branding.ts` scales its 24-unit geometry to Obsidian's 100-unit icon canvas.
 - `obsidian-plan-template.mjs`: existing-day template preview/apply, untouched
   prose and templates, grouped summary Undo/Redo, concurrent edits, changed or
-  removed templates and invalid input. Uses an open native Markdown editor and
+  removed templates, and invalid input. Uses an open native Markdown editor and
   checks explicit replacement with automatic updates disabled.
 - `obsidian-multi-delete.mjs`: Shift-click/arrow range anchors and reversal,
   disjoint selection, count-aware deletion, text-field key behavior, exact grouped
-  Undo/Redo, deleting all rows, confirmation conflicts and stale-range clearing.
+  Undo/Redo, deleting all rows, confirmation conflicts, and stale-range clearing.
 - `obsidian-performance.mjs`: explicit release thresholds, browser long-task
   observation, and a byte comparison of all notes across disable/startup.
 - `obsidian-footer-lag.mjs`: totals catch up after a blocked update once times are
   fixed; hand-edited totals stay preserved.
 - `obsidian-entry-helpers.mjs`: segmented Activity/Report control, V after
   redraws and empty-space clicks, the shared shortcut table, activity helpers in
-  Settings, semicolon fields and one-fraction percent credit.
+  Settings, semicolon fields, and one-fraction percent credit.
 - `obsidian-shortcuts-shift.mjs`: E/F2 editing, focusing the activity list, the
   Activity/Report toggle and V, the editor explanation, sectioned Help, the
-  settings shortcut, row Shift duration modes and percent credit.
+  settings shortcut, row Shift duration modes, and percent credit.
 - `obsidian-ui-consistency.mjs`: actions resolve an open activity edit first,
   confirmations keep failures inline, Shift plans validation, shared dialog
-  footers and the capture options menu.
+  footers, and the capture options menu.
 - `obsidian-audit-fixes.mjs`: transient notices, native settings headings,
   queued Summary note saves with automatic rescans, follow-up reindexing and
   incremental cache reads, with unchanged synthetic notes.
@@ -290,8 +290,8 @@ summary writes and source cursor navigation, before asserting their result.
 Write errors and attention notices for the person using the planner, not for
 the code. Each says, in order: what happened, whether their notes are safe (and
 whether anything was written), and the one action to take, named exactly as its
-button. Say "edit", "note", "summary check" and "compare", not "operation",
-"source", "checkpoint", "guard" or "reconcile". The attention panel shows only
+button. Say "edit," "note," "summary check," and "compare," not "operation,"
+"source," "checkpoint," "guard," or "reconcile." The attention panel shows only
 actions that can help now, next to the problem they fix; never show a disabled
 button that leaves the reader guessing why.
 
@@ -313,7 +313,7 @@ edited, and an elapsed calculation guards the preceding row against concurrent
 changes. Split credits remain explicit. Persist only the resulting ordinary
 numeric Markdown.
 
-Package only built plugin files, the guide, and licence. Never include copied
+Package only built plugin files, the guide, and license. Never include copied
 personal notes, test-vault content, journal data, or audit records in a release.
 - `obsidian-project-registry.mjs`: shared registration, period ownership, positive
   daily vs zero declarations, excluded templates, unified native Settings,
@@ -323,12 +323,12 @@ personal notes, test-vault content, journal data, or audit records in a release.
 ## Syntax migration (0.2.61)
 
 `src/core/syntax.ts` holds the one grammar; `src/core/syntax-migration.ts`
-converts retired forms and proves counted minutes, recorded totals and summary
+converts retired forms and proves counted minutes, recorded totals, and summary
 rows unchanged. `tools/migrate-syntax.mjs [--vault <dir>]` is a dry run that
 writes `artifacts/syntax-migration-<vault>.json`; `--show <text>` prints every
 changed line of matching notes. `--apply` requires Obsidian closed, backs up each
 touched note to `<backups>/planner-syntax-*`, writes via
-temporary files with hash guards and restores on failure. Rehearse on a copied
+temporary files with hash guards, and restores on failure. Rehearse on a copied
 vault in `.test-vault` first.
 
 ## Criteria note (0.2.62)
@@ -339,7 +339,7 @@ read in the plugin). Called without that argument, `parseSummary` still reads a
 summary's own legend for core tests and the historical migrations.
 `tools/migrate-criteria.mjs [--vault <dir>] [--apply]` moved the legends: it
 requires every summary to hold the same section, refuses if the note already
-exists, backs up each summary, and proves rows, projects and thresholds unchanged.
+exists, backs up each summary, and proves rows, projects, and thresholds unchanged.
 Native helpers set criteria with `tools/criteria-note.mjs`; `tools/native-reset.mjs`
 restores the vault's first-seen settings and criteria note between helpers.
 
@@ -368,12 +368,12 @@ Owner tools refuse to run without `vault`; native helpers only accept `.test-vau
 `src/core/streaks.ts` classifies credited totals with the parsed 🔥 range (default
 >=300m only when the shared criteria note is absent). `recordedReviewRows()` and
 `review()` share one resolver in `core/history.ts`, including daily folder choice,
-recorded-SUM precedence and unresolved summary duplicates. The sparse resolver
+recorded-SUM precedence, and unresolved summary duplicates. The sparse resolver
 indexes summaries once and leaves gaps absent; streaks do not expand long empty
 calendar spans or inherit Report's 100-year display-range limit.
 
 The controller caches the result until ingest/notifications or a changed local
-date. The view repaints the badge separately on focus, visibility and every 15
+date. The view repaints the badge separately on focus, visibility, and every 15
 seconds so drafts and selection remain untouched. Criteria errors are visible;
 loading is never shown as zero. `tests/streaks.test.ts` and
 `tools/obsidian-streaks.mjs` cover the contract. Report marker counts still report
@@ -381,7 +381,7 @@ saved symbols; streaks use numeric credit, so these can intentionally differ.
 
 ## Undoable suggestions
 
-`core/activity-target.ts` verifies the intended time, duration and complete label
+`core/activity-target.ts` verifies the intended time, duration, and complete label
 after replacement. It returns a selected edit range and insertion; ambiguous
 names serialize with existing semicolon fields while retaining raw unit amounts.
 `ui/draft-replacement.ts` applies that range through the textarea owner's native
@@ -390,7 +390,7 @@ or bypass typing history. Selected replacements, including an unchanged adjacent
 character for empty ranges, isolate suggestions from earlier/later typing.
 
 The two Chromium APIs are deprecated and produce five advisory lint warnings;
-this compatibility choice is isolated, capability-checked and covered by real
+this compatibility choice is isolated, capability-checked, and covered by real
 native typing/history tests. Lint rules are unchanged. An unsupported/refused
 transaction shows an error instead of inserting without Undo. No editing-history
 state is written into notes. Keep the programmatic-edit guard on `beforeinput`
@@ -402,5 +402,5 @@ replacing a selection contained within the written amount field is. Locate raw
 unit amounts before the activity rather than searching normalized digits in its
 name. Apply replacement intent on input, not a canceled beforeinput, and ignore
 helper transactions. `obsidian-duration-boundaries.mjs` exercises zero, whole-minute
-amounts, explicit over-credit, splits and planned rows through native typing,
-draft Undo/Redo, context-only saves, Cancel and exact persistent Undo/Redo.
+amounts, explicit over-credit, splits, and planned rows through native typing,
+draft Undo/Redo, context-only saves, Cancel, and exact persistent Undo/Redo.

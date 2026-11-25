@@ -31,7 +31,7 @@ export function parseMarkerCriteria(text: string, path: string): MarkerCriteria 
     if (min !== undefined && (!Number.isSafeInteger(min) || (max !== Infinity && !Number.isSafeInteger(max)) || max! < min)) {
       issue(`Invalid minute range for ${parts[0]}. Use 30-149m or ≥300m.`); continue;
     }
-    if (min === undefined && /\d|[≥<>]/.test(parts[1] ?? '')) { issue(`Unrecognised minute range for ${parts[0]}. Use 30-149m or ≥300m.`); continue; }
+    if (min === undefined && /\d|[≥<>]/.test(parts[1] ?? '')) { issue(`Unrecognized minute range for ${parts[0]}. Use 30-149m or ≥300m.`); continue; }
     const rule = (parts[1] ?? '').toLowerCase();
     const description = parts.slice(min !== undefined || rule === 'any' || rule === 'formatting' ? 2 : 1).join(' | ');
     const contextual = /\(context(?:\s*:\s*([a-z][a-z0-9 -]*))?\)/i.exec(description);

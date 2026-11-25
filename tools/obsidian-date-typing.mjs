@@ -79,7 +79,7 @@ try {
   assert.equal(await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.rangeStart), '2026-10-01');
   assert.equal(await start.inputValue(), '2026-10-01');
   await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.switchMode('day'));
-  checks.push('Review start/end dates use the same typing behaviour');
+  checks.push('Review start/end dates use the same typing behavior');
   await writeFile('artifacts/date-typing-native.json', JSON.stringify({ yearFirst, checks }, null, 2));
   console.log(JSON.stringify({ yearFirst, checks }, null, 2));
 } finally { await browser.close(); }

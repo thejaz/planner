@@ -4,7 +4,7 @@ The `Criteria & Markers` section lives in `thejaz-criteria.md`, one note for the
 whole vault (at its root by default). Inside it, definitions use `marker | range/rule | name`.
 Labels retain their authored case and spelling. Ranges control when a marker
 applies; a label such as `no-pro` does not change behavior. Supported marker
-identities, context IDs and calendar-weekend selection remain the base vocabulary.
+identities, context IDs, and calendar-weekend selection remain the base vocabulary.
 
 Use a child heading to define combinations explicitly:
 
@@ -44,10 +44,10 @@ because no rule excludes those pairs. Replacement winners are evaluated from
 the original candidate set simultaneously, independently of declaration order.
 
 Rules reference emoji markers defined in the same selected legend. Operations
-are case-insensitive; `>=`/`≥`, old definition syntax and emoji variation selectors
+are case-insensitive; `>=`/`≥`, old definition syntax, and emoji variation selectors
 are accepted. The subsection must be nested within Criteria & Markers, not in
-Days, Bookmarks or fenced examples. Duplicate rules, unsupported operations,
-undefined references, self-replacement and replacement cycles are errors. An
+Days, Bookmarks, or fenced examples. Duplicate rules, unsupported operations,
+undefined references, self-replacement, and replacement cycles are errors. An
 exclusive rule covering overlapping earned ranges is also ambiguous and blocked.
 Malformed rules never silently become permissive.
 
@@ -67,7 +67,7 @@ no combination restrictions. The context picker needs definitions to offer named
 choices. An invalid/empty supplied legend remains an error; permissiveness concerns
 combinations, not malformed definitions or missing numeric coverage for new rows.
 
-Every summary, context selection and report validation use the combination block
+Every summary, context selection, and report validation use the combination block
 in `thejaz-criteria.md`; a legend left inside a summary is ignored.
 The picker shows the parsed rules and remains a single-choice replacement action;
 Cancel preserves any saved multi-context combination.

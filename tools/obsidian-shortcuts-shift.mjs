@@ -58,12 +58,12 @@ try {
 
   // 3/4. Activity/Report segmented control: the current view uses the accent text; V toggles, but not while typing.
   assert.equal(await activity.getAttribute('aria-pressed'), 'true');
-  const colours = await page.evaluate(() => {
+  const colors = await page.evaluate(() => {
     const active = document.querySelector('.planner-view-option.is-active'), probe = document.body.createDiv();
     probe.style.color = 'var(--text-accent)'; const accent = getComputedStyle(probe).color; probe.remove();
     return { active: getComputedStyle(active).color, accent };
   });
-  assert.equal(colours.active, colours.accent);
+  assert.equal(colors.active, colors.accent);
   // The synthetic vault may have no summary for Report totals; check the mode itself.
   await report.click(); await page.waitForFunction(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.mode === 'review');
   assert.equal(await report.getAttribute('aria-pressed'), 'true');
@@ -79,7 +79,7 @@ try {
   await page.evaluate(() => app.commands.executeCommandById('thejaz-planner:toggle-view'));
   await page.waitForFunction(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.mode === 'review');
   await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.switchMode('day'));
-  checks.push('The Activity/Report control marks the current view in the accent colour; V and the command toggle it, but V types normally in a field');
+  checks.push('The Activity/Report control marks the current view in the accent color; V and the command toggle it, but V types normally in a field');
 
   // 5. The compact editor explains percent credit, elapsed time and completion.
   await row(1).locator('.planner-label').click(); await row(1).focus(); await row(1).press('e'); await editor.waitFor();

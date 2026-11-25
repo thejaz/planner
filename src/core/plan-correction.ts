@@ -12,7 +12,7 @@ const CORRECTION_MODES: { value: CorrectionMode; label: string; description: str
 interface CorrectionPreview { change: Change; anchors: { time: string; label: string }[]; following: number }
 /**
  * Explicit correction of the selection. Rebuilding end times continues through the
- * following planned rows only while they would otherwise run backwards (0.2.135): one
+ * following planned rows only while they would otherwise run backward (0.2.135): one
  * mistyped time no longer blocks every option. The preview shows each of those rows.
  * Completed rows change only when selected; other rows never change.
  */
@@ -48,7 +48,7 @@ function correctOnce(day: Day, selected: Set<Entry>, mode: CorrectionMode): Omit
       time = clockText(end); endpoints.set(entry, end % 1440);
     } else {
       const elapsed = intervalBetween(start, entry.clock) ?? (entry.interval !== null ? entry.interval : null);
-      if (elapsed === null) throw new Error(`Line ${entry.line + 1}: end times run backwards or are unknown. Rebuild end times first, or edit the source.`);
+      if (elapsed === null) throw new Error(`Line ${entry.line + 1}: end times run backward or are unknown. Rebuild end times first, or edit the source.`);
       const credit = entry.duration.split('/')[0]!;
       if (mode === 'durations' && /^\d+$/.test(credit)) {
         if (entry.elapsed !== elapsed) duration = String(elapsed);
@@ -59,7 +59,7 @@ function correctOnce(day: Day, selected: Set<Entry>, mode: CorrectionMode): Omit
   }
   const after = parseDay(applyPatches(day.text, patches), day.path);
   const last = Math.max(...[...selected].map(entry => day.entries.indexOf(entry))), next = day.entries[last + 1];
-  // The row right after the corrected block, if it now (or still) runs backwards, may join it.
+  // The row right after the corrected block, if it now (or still) runs backward, may join it.
   if (mode === 'times' && next && after.diagnostics.some(d => d.code === 'backward-time' && d.line === next.line))
     return { blocked: next, message: `Line ${next.line + 1}: this correction would run past an unselected activity. Include that plan in the selection or edit its time.` };
   for (const issue of after.diagnostics.filter(d => d.code === 'backward-time')) {

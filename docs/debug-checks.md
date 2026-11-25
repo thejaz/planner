@@ -4,16 +4,16 @@
 
 For unknown-time Edit regressions, run `node tools/obsidian-unknown-time-edit.mjs`.
 It checks completed and planned rows, unknown names, recorded zero, name-only
-changes with rounding enabled, helper buttons, unchanged saves, Cancel, focus,
-position, a broken time chain and exact Undo/Redo. Deliberately changed durations
-still use the configured rounding; unchanged recorded amounts stay written.
+changes, helper buttons, unchanged saves, Cancel, focus, position, a broken time
+chain, and exact Undo/Redo. Changed durations are saved as typed; unchanged
+recorded amounts stay written.
 
 For unnamed entries, activity completion and bounded allocations, run
 `node tools/obsidian-activity-entry.mjs` in the isolated vault. It checks
 time/duration-only fallback, procrastination defaults, Tab versus normal focus
-navigation, Edit/Cancel, exact Undo/Redo, `.9-.1/` with rounded endpoints and a
+navigation, Edit/Cancel, exact Undo/Redo, `.9-.1/` percentage splits, and a
 narrow layout. Keep the helper/defaults checks in
-`node tools/obsidian-entry-helpers.mjs` alongside it. Percentage and rounded
+`node tools/obsidian-entry-helpers.mjs` alongside it. Percentage
 allocations share one elapsed-time budget; explicitly written over-credit and
 untouched historical values are separate preservation cases.
 
@@ -25,7 +25,7 @@ against the isolated synthetic vault, never the owner's working notes.
 
 On a fresh checkout, run `npm ci` and `npm run setup:lint`. Run `npm run check`
 for official Obsidian lint checks, typechecking, calculation/parser tests,
-storage/recovery tests and the build. Confirm package.json, package-lock.json and manifest.json
+storage/recovery tests, and the build. Confirm package.json, package-lock.json and manifest.json
 agree on the version. A documentation or native-test-only fix does not require
 a plugin version bump or reinstall when the runtime bytes are unchanged.
 
@@ -44,7 +44,7 @@ of its plugins. Audit both trees with `npm audit` and
 `npm audit --prefix tools/lint`; neither tree is shipped in the plugin runtime.
 
 Narrow sentence-case options preserve the owner's explicit lowercase actions,
-key names, IANA time-zone example and authored note syntax. They do not disable
+key names, IANA time-zone example, and authored note syntax. They do not disable
 validation or security rules. Three recommended advisory warnings are reviewed:
 
 - Dynamic settings use the existing API compatible with minimum Obsidian 1.8.4.
@@ -73,18 +73,18 @@ leftover dialogs and clears only the test journal.
 
 | Area | Helpers |
 | --- | --- |
-| Settings, help and focus | `obsidian-settings-section-tooltips`, `obsidian-settings-feedback`, `obsidian-apply-hints`, `obsidian-emoji-field` |
+| Settings, help, and focus | `obsidian-settings-section-tooltips`, `obsidian-settings-feedback`, `obsidian-apply-hints`, `obsidian-emoji-field` |
 | Reports and responsive columns | `obsidian-project-ranking`, `obsidian-review-shares`, `obsidian-review-ranges`, `obsidian-unassigned` |
 | Contexts and marker rules | `obsidian-context-picker`, `obsidian-combination-rules` |
 | Activity editing and selection | `obsidian-first-activities`, `obsidian-compact-edit`, `obsidian-plan-correction`, `obsidian-edit-selection`, `obsidian-date-typing`, `obsidian-interactions` |
 | Project changes | `obsidian-project-transfer`, `obsidian-project-removal` |
-| Recovery, concurrency and startup | `obsidian-checkpoint-recovery`, `obsidian-reliability`, `obsidian-startup-wait` |
+| Recovery, concurrency, and startup | `obsidian-checkpoint-recovery`, `obsidian-reliability`, `obsidian-startup-wait`, `obsidian-recovery-history` |
 
 After streak/header changes, also run `obsidian-streaks` for current/best totals,
 archive authority, criteria changes, read-only navigation/filtering, cache reuse,
-draft preservation, exact Undo/Redo, clock/focus/wake refreshes, unavailable rules
+draft preservation, exact Undo/Redo, clock/focus/wake refreshes, unavailable rules,
 and light/dark responsive header geometry. `tests/streaks.test.ts` covers numeric
-boundaries, finite/custom ranges, recorded zero, duplicates, gaps and calendar
+boundaries, finite/custom ranges, recorded zero, duplicates, gaps, and calendar
 boundaries using the shared Report resolver.
 
 After summary-status or pending-edit changes, also run
@@ -96,14 +96,14 @@ reports per-edit timings.
 
 After row-shortcut changes, also run `obsidian-row-shortcuts` for all eight
 single-key actions, multi-selection, typing/menu guards, disabled actions,
-held keys, move focus, unsaved drafts and exact Undo/Redo.
+held keys, move focus, unsaved drafts, and exact Undo/Redo.
 
 `bash tools/native-run.sh <helper names>` is a convenience loop for the same
 sequence. Inspect every exit code in `artifacts/run-summary.txt` and each failing
 log; the final word `done` alone does not confirm success.
 
 When a native assertion fails, retain its first failure. Distinguish a runtime
-defect from a stale expectation or test race before changing plugin behaviour.
+defect from a stale expectation or test race before changing plugin behavior.
 Resolve and measure the current DOM in one browser evaluation for geometry:
 an element resolved before a redraw can be detached by the time it is measured.
 Keep assertions for visible, nonzero dimensions and actual ordering/alignment.
@@ -111,10 +111,10 @@ Keep assertions for visible, nonzero dimensions and actual ordering/alignment.
 ## Record and hand off
 
 Record the tested version, core results, each native helper's result, any initial
-failures, verified fixes and remaining limits in the local verification record
+failures, verified fixes, and remaining limits in the local verification record
 (the gitignored `docs/local/`).
 Compare the built runtime with the exact files used in the isolated vault before
-an install. Check Markdown preservation, errors, keyboard focus and narrow layouts
+an install. Check Markdown preservation, errors, keyboard focus, and narrow layouts
 in the relevant helpers; a successful build is not native interaction evidence.
 
 The 26 October 2026 pass for 0.2.93 passed 576 tests in 34 files and all 20 helpers
@@ -127,5 +127,5 @@ or full private-history performance coverage.
 Preserve useful reports and recovery evidence outside disposable output before
 recycling the isolated vault/profile and raw logs, following `cleanup.md`.
 Commit explicit task-owned files after reviewing the staged diff, and hand off
-the commit hash, checks and remaining Git status. Create Desktop ZIPs only when
+the commit hash, checks, and remaining Git status. Create Desktop ZIPs only when
 explicitly requested.

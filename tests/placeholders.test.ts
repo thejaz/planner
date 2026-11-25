@@ -23,7 +23,7 @@ describe('plain Markdown unknown placeholders', () => {
     const prev = parseDay('- [x] 23:50 (n/a) : awake').entries[0];
     expect(quickEntry('00:10 >', 'plan', prev, '00:10').diagnostics).toEqual([]);
     expect(quickEntry('25:00 >', 'plan', prev, '00:10').diagnostics.join()).toContain('invalid time');
-    expect(quickEntry('22:00 >', 'plan', prev, '00:10').diagnostics.join()).toContain('backwards');
+    expect(quickEntry('22:00 >', 'plan', prev, '00:10').diagnostics.join()).toContain('backward');
   });
   it.each(['?', '12:55 (n/a) : >'])('keeps %s unknown when checked and blocks derived writes', placeholder => {
     const raw = `- [x] 12:00 (60) : chp\n- [ ] ${placeholder}\nCHP = 60\nSUM = 60\nMy annotation.\n`;

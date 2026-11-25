@@ -185,7 +185,7 @@ class PlannerSettings extends PluginSettingTab {
     refresh();
     new Setting(general).setName('Routines folder').setDesc('Folder containing your Markdown plan templates.')
       .addText(text => { text.setValue(settings.routinesFolder); commitOnChange(text.inputEl, value => saveGeneral({ routinesFolder: value })); text.inputEl.setAttribute('aria-label', 'Routines folder'); });
-    new Setting(general).setName('Time zone').setDesc(`Used by Today and “now”. This computer uses ${systemTimeZone()}.`)
+    new Setting(general).setName('Time zone').setDesc(`Used by Today and “now.” This computer uses ${systemTimeZone()}.`)
       .addDropdown(dropdown => {
         for (const choice of timeZoneChoices(settings.timezone, systemTimeZone())) dropdown.addOption(choice.value, choice.label);
         dropdown.selectEl.setAttribute('aria-label', 'Time zone'); dropdown.selectEl.addClass('planner-time-zone');

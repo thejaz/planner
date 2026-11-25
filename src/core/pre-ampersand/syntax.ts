@@ -2,7 +2,7 @@
 // 0.2.61 and `&` migrations only. The plugin never imports it; do not change it.
 /**
  * The Planner Markdown grammar (0.2.61): one canonical form per idea, written by
- * every writer and expected by every reader. Retired forms are still recognised so
+ * every writer and expected by every reader. Retired forms are still recognized so
  * readers can report them precisely and the migration can convert them.
  *
  * Daily notes:   heading `## plan for 5 oct 26` (or `## recorded totals`)

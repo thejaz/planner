@@ -74,7 +74,7 @@ try {
       }
       for (const row of layout.rows) {
         assert(Math.abs(row.w - layout.rows[0].w) < 1, 'Equal-width chips');
-        assert.notEqual(row.background, 'rgba(0, 0, 0, 0)', 'Keep project colours');
+        assert.notEqual(row.background, 'rgba(0, 0, 0, 0)', 'Keep project colors');
         // Code/emoji/rank starts and the time/percentage right edges line up even across two-digit ranks.
         for (const index of [0, 1, 2]) assert(Math.abs(row.fields[index].x - layout.rows[0].fields[index].x) < 1, 'Aligned leading fields');
         for (const index of [3, 4]) assert(Math.abs(row.fields[index].right - layout.rows[0].fields[index].right) < 1, 'Aligned numeric fields');
@@ -85,7 +85,7 @@ try {
     }
   }
   assert(layouts[0].columns > 1 && layouts.find(l => l.width === 360).columns === 1, JSON.stringify(layouts));
-  checks.push('Light/dark at 1280, 800, 650, 500 and 360px: ranks read down then across, responsive columns, equal widths, aligned fields, preserved colours and no overflow');
+  checks.push('Light/dark at 1280, 800, 650, 500 and 360px: ranks read down then across, responsive columns, equal widths, aligned fields, preserved colors and no overflow');
   await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.draw());
   assert.deepEqual(await chips.locator('strong').allTextContents(), order);
   checks.push('Tied totals retain their order after redraw');

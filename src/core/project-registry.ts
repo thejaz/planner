@@ -71,7 +71,7 @@ export function projectValue(days: Iterable<Day>, summary: Summary, code: string
     if (dates.has(day.date)) throw new Error(`${day.date}: there is more than one note for this date. Keep one before project totals can update.`);
     dates.add(day.date);
     if (day.recorded[code] === undefined && day.entries.some(e => e.checked && e.unknownCredit))
-      throw new Error(`${day.path}: a completed activity has no minutes for its project, so ${code} cannot be totalled. Open the note and add them.`);
+      throw new Error(`${day.path}: a completed activity has no minutes for its project, so ${code} cannot be totaled. Open the note and add them.`);
     if (day.diagnostics.some(d => d.blocks && /total/.test(d.code))) throw new Error(`${day.path}: a total at the bottom of this note is unreadable or repeated. Open the note and fix it first.`);
     total += effectiveTotals(day).projects[code] ?? 0;
     if (!Number.isSafeInteger(total)) throw new Error(`${code}: this project total is too large to calculate safely. Check the note totals for a typo.`);

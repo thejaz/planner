@@ -3,6 +3,51 @@
 The full reference behind the [README](../README.md): every action, the note
 syntax in detail, review, and recovery.
 
+## New in 0.3.13
+
+- **Unreadable recovery history is reported.** If both recovery files exist but
+  neither can be read, Planner says so instead of starting over silently: an edit
+  interrupted before Obsidian started cannot be finished or undone, your notes are
+  unchanged, and the unreadable files are kept as `recovery-unreadable-...` copies.
+- **A paused summary stays paused when renamed.**
+
+## New in 0.3.12
+
+- **Quieter ordinary-activity notice.** A row that pairs a project with an
+  ordinary activity, such as `prj & tea`, no longer shows a notice
+  every time it is selected. The notice now appears only on the first day a name
+  is used, when it may be a mistyped project, and shows names as written. A
+  credited name that is not a project ("Not defined") is still always shown.
+- **Why an action is unavailable.** With several rows selected, a short line
+  under the buttons says why Shift, Correct, or Combine cannot run (for example,
+  a mix of completed and planned rows). Pressing the key of an unavailable
+  action, such as `S` on a completed row, shows the reason too.
+
+## New in 0.3.11
+
+- **`...` is a placeholder.** A `...` row holds no time of its own, so an
+  activity added after it, or edited below it, counts from the last known end
+  time before it: select `...` after `20:21 (20) : tea` and `fill prj` fills up to
+  the next activity, `now prj` or `21:00 prj` counts from 20:21. `fill` also
+  looks past a `...` that follows the insertion point. The row goes where you
+  add it. A restart (`21:00 >`) or an unknown end time (`? 30 walk`) still starts
+  the count afresh, and an end time earlier than the last known one saves `n/a`.
+
+## New in 0.3.10
+
+- **A colon before the name.** Quick entry and Edit accept a row written the way
+  the note writes it: `14:30 30 : prj`, `now : prj`, `fill : prj`. Everything
+  after the colon is the name as typed, numbers included (`30 : read 2 chapters`),
+  and `: fill water bottles` keeps fill in a name. The colon counts only when
+  only a time and minutes come before it, so names such as `notes: ch 3` stay as
+  typed.
+
+## New in 0.3.9
+
+- **`fill` without a colon.** `fill task` now fills the gap, just as `now task`
+  ends now; `fill : task` and `fill; task` still work. To name an activity that
+  starts with "fill", begin with a semicolon: `; fill water bottles`.
+
 ## New in 0.3.3
 
 - **THEJAZ folder.** The default routines folder is now `THEJAZ`, so anything
@@ -11,7 +56,7 @@ syntax in detail, review, and recovery.
 ## New in 0.3.2
 
 - **Ordinary day as a routine note.** Create day and Replace plan offer
-  **🌞 ordinary day** beside the blank day: a planned morning, afternoon and evening
+  **🌞 ordinary day** beside the blank day: a planned morning, afternoon, and evening
   with gaps (`...`) for your own work. The first time you choose it, Planner writes it
   as the note `🌞 ordinary day.md` in your routines folder (`THEJAZ` unless you
   change it) and uses that note. Edit it like any routine; rename or delete it as you wish. Undo removes the note again.
@@ -20,23 +65,25 @@ syntax in detail, review, and recovery.
 ## New in 0.3.0
 
 - **Daily note name.** Settings > Daily setup > Daily note name is one choice:
-  **Date only** (the default), **Prefix** or **Suffix**. A prefix or suffix, such
+  **Date only** (the default), **Prefix**, or **Suffix**. A prefix or suffix, such
   as `plan 2026-11-19.md`, keeps a journal already named `2026-11-19.md` apart.
   Most vaults need neither. New days use the chosen name; plans under the plain
   name and days made under any earlier prefix or suffix keep counting. The text
-  cannot contain digits, slashes or other characters that are not allowed in file
+  cannot contain digits, slashes, or other characters that are not allowed in file
   names, and a prefix cannot start with a period (Obsidian hides such files).
 - **Rounding is retired.** Times and minutes are saved exactly as typed
   or calculated. Percent shares and Split equally use whole minutes. Values that
   earlier rounding wrote into notes stay as they are.
-- **`fill`.** In quick entry or Edit, `fill : task` (or `fill; task`) ends where the
-  next activity starts: after `09:00 (10) : setup` and before `10:00 (5) : break`
-  it saves `09:55 (55) : task`. Credit shortcuts still work (`fill 30/ task` saves
-  `30/55`). A word after `fill` without a colon is an ordinary activity name, so
-  `fill water bottles` stays an activity. It needs a known end time before it and an activity with an end time
-  and minutes after it, and it must be the last line of a multiline entry. A
-  `fill :` row typed straight into a note is listed as a note check with a **fill**
-  button that calculates it the same way.
+- **`fill`.** In quick entry or Edit, `fill task` ends where the next activity
+  starts: after `09:00 (10) : setup` and before `10:00 (5) : break` it saves
+  `09:55 (55) : task`. Like `now`, `fill` stands for an end time, so it needs no
+  colon (from 0.3.9; `fill : task` and `fill; task` still work). Credit shortcuts
+  still work (`fill 30/ task` saves `30/55`). Only the whole word counts, so
+  `filler` and `fill-up` stay names; to name an activity that starts with "fill",
+  begin with a semicolon: `; fill water bottles`. It needs a known end time before
+  it and an activity with an end time and minutes after it, and it must be the last
+  line of a multiline entry. A `fill :` row typed straight into a note is listed as
+  a note check with a **fill** button that calculates it the same way.
 - **Combine.** Select two or more neighboring activities (Shift-click or
   Shift + arrows) and choose **combine** (`M`). Repeated `nve`, `org`, `nve` rows
   become one row, `08:32 (11-3) : nve & org`, ending at the last selected row's
@@ -54,17 +101,17 @@ syntax in detail, review, and recovery.
   never counts as a disagreement with your notes.
 - **Correct after a mistyped time.** If one end time was typed wrong (`05:23`
   after `06:35`), **rebuild end times from durations** now continues through the
-  following planned rows that would otherwise run backwards, and the preview names
-  them. It stops at the first row that already fits, a gap or an unknown time, and
+  following planned rows that would otherwise run backward, and the preview names
+  them. It stops at the first row that already fits, a gap, or an unknown time, and
   refuses rather than move a completed activity you did not select.
 - **Groups** are always shown under Settings > Projects & groups; no toggle.
 - **Day records** has date, credit (with a small bar), project, and source
   columns. The source note is always visible and opens with one click; the old
   hidden "Evidence" detail is gone. Each day's recorded summary markers (hot,
-  cool, low and its context) sit beside its credit; hover for their names.
+  cool, low, and its context) sit beside its credit; hover for their names.
 - **Ignoring warnings.** Repeated note checks read once, with their line
   numbers as links to the note. Advisory warnings, "credits more minutes than it lasted" and
-  "the written duration differs from the clock times", have **Ignore** in the day's note checks and in Day
+  "the written duration differs from the clock times," have **Ignore** in the day's note checks and in Day
   records. An ignored warning stays hidden until that row is edited; Settings >
   Maintenance & recovery > Ignored warnings shows how many and can restore them
   all. Notes are never changed by ignoring.
@@ -86,7 +133,7 @@ Correct also offers matching durations to existing end times or keeping credit
 and recording elapsed time. Split allocations are preserved, using an elapsed
 suffix rather than guessing new allocations. An already-consistent `10/18` stays
 as written. A selected completed row stays checked; its corrected minutes update
-the totals like any edit. Unselected rows, missing anchors and unknown durations
+the totals like any edit. Unselected rows, missing anchors, and unknown durations
 are never silently repaired. Correct is disabled when there is nothing it can safely
 change. A concurrent note edit blocks the preview; Cancel writes nothing, and
 Undo/Redo retain exact recovery.
@@ -124,22 +171,23 @@ empty plan needs a baseline (an entry without an end time, such as `50 prj`), pr
 row with n/a duration. No note is seeded merely by opening or clearing it.
 
 Settings are grouped into Daily setup, Activity entry, Reports & markers,
-Projects & groups, and Maintenance & recovery. Rebuild, sync, retry, undo and
+Projects & groups, and Maintenance & recovery. Rebuild, sync, retry, undo, and
 helper reset show their result, including no changes or a failure. Feedback and
 project dialogs stay in the Settings window. Black Obsidian label bubbles are
-suppressed on Settings sections, fields, project controls and their dialogs.
+suppressed on Settings sections, fields, project controls, and their dialogs.
 Accessible control names and keyboard navigation remain available. Smaller native
 hover hints still explain actions such as Sync summaries and project removal;
-visible descriptions and feedback explain saving, failures and unavailable actions.
+visible descriptions and feedback explain saving, failures, and unavailable actions.
 
-`...` inserts an intentional gap (`- [ ] ...`). When nothing is known, `?`,
-`? ? ?` and `?; ?; ?` insert the same gap. An unknown end time is written
-`? (30) : prj`: enter `? 30 prj` or `?; 30; prj` (the minutes are needed, or
-`? ? prj` when they are unknown too). Gaps and unknown end times break the clock
-chain: supply an explicit endpoint such as `14:00 >` before adding more blocks.
-A gap has no credit and does not count as an unresolved activity.
-After a gap, supply a known endpoint (`14:00 >`) before duration-only input,
-or write an unknown endpoint with minutes explicitly (`? 30 buffer`).
+`...` inserts a placeholder (`- [ ] ...`). When nothing is known, `?`,
+`? ? ?`, and `?; ?; ?` insert the same placeholder. It holds no time: an activity
+added or edited after it counts from the last known end time before it (from
+0.3.11), and `fill` looks past it to the next activity. An unknown end time is
+written `? (30) : prj`: enter `? 30 prj` or `?; 30; prj` (the minutes are
+needed, or `? ? prj` when they are unknown too). An unknown end time breaks the
+clock chain; to start counting afresh after a placeholder, add an explicit
+endpoint such as `14:00 >`. A placeholder has no credit and does not count as an
+unresolved activity.
 Editing an unknown-time activity keeps its `?` endpoint and recorded minutes,
 including zero, when only its name changes or an activity helper is chosen.
 Activity helpers can replace an unfinished or invalid name while keeping the
@@ -167,7 +215,7 @@ Figures are minutes. SUM must equal the project totals; at least one project
 line is required (explicit zero is allowed). Do not mix activity checkboxes into
 this type of note. Edit its figures in the Markdown source. Valid records count
 in Review and the matching summary date without requiring activity times.
-Malformed, missing, duplicate or mismatched figures block summary updates.
+Malformed, missing, duplicate, or mismatched figures block summary updates.
 
 Created by [THEJAZ](https://github.com/thejaz/). Look for the smiling sun icon in
 Obsidian's ribbon and planner tab. Its internal ID is `thejaz-planner` (it was
@@ -184,7 +232,7 @@ Emoji counts include a visible legend. `highlights` and `bolds` are formatting
 conventions checked against records, not separate counted categories. Review's
 **day records** section starts collapsed and retains your choice across refresh.
 Press **C** in Activity view, or choose **set day context**. Compact selectable
-rows show context IDs, readable names and ranges parsed from the legend, plus
+rows show context IDs, readable names, and ranges parsed from the legend, plus
 **🌞 ordinary day** to clear context (the sun is never written into notes).
 The dialog shows the owning period summary and previews the exact result before
 saving. Context is stored only in that summary, including for archived dates;
@@ -237,7 +285,7 @@ the familiar ordinary/excused/planned behavior. Only 😣 receives automatic
 whole-row highlighting.
 
 Planned contexts require `any`. Duplicate or incompatible
-definitions, unsupported contexts, overlapping earned bands and missing coverage
+definitions, unsupported contexts, overlapping earned bands, and missing coverage
 block generation with a correction message. Report counts retain recorded
 historical markers and show inconsistencies without silently repairing them.
 Legacy legend syntax and `≥300m` remain supported. Editing a name never changes
@@ -257,10 +305,10 @@ Missing definitions do not delete recorded rows or historical markers on read.
 
 Marker legend labels preserve authored capitalization; context IDs and the
 ordinary day choice are lowercase. Inline project prefixes display lowercase.
-Settings labels, dialog titles and tabs retain normal capitalization;
+Settings labels, dialog titles, and tabs retain normal capitalization;
 planner action buttons are lowercase. Project chips retain uppercase codes and
 note text remains intact. Duration values use rounded purple chips. Editing
-buttons are rounded white with black text, subtle purple hover/pressed colors
+buttons are rounded white with black text, subtle purple hover/pressed colors,
 and brief interaction transitions that respect reduced motion. Delete
 confirmation starts on its delete button, so Delete then
 Enter confirms; Escape cancels and Undo restores the operation.
@@ -268,17 +316,17 @@ Enter confirms; Escape cancels and Undo restores the operation.
 In Settings, **Projects & groups** lets you create groups and assign each project
 once. Report adds a quiet text row of group totals above project chips; groups
 are stored only in plugin settings. **Reports & markers** identifies the shared
-criteria note, toggles recorded marker counts and chooses weekend days.
+criteria note, toggles recorded marker counts, and chooses weekend days.
 Counts follow Report dates and actual
 saved emojis/highlight/bold formatting, independently of the project filter.
 Context counts can overlap. Expand **marker checks** to open discrepant source
-lines and correct markers, minutes, criteria or weekend settings. No automatic
+lines and correct markers, minutes, criteria, or weekend settings. No automatic
 marker repairs occur. Future summary rows use configured weekends; changing
 settings preserves every existing Markdown byte.
 
-Quick entry accepts `?` for the gap `- [ ] ...` and `12:55 >` for
-`- [ ] 12:55 (n/a) : >`. Both remain unchecked, even in Log mode. Unknown rows
-break elapsed-time calculation until a known endpoint; a timed arrow supplies
+Quick entry accepts `?` for the placeholder `- [ ] ...` and `12:55 >` for
+`- [ ] 12:55 (n/a) : >`. Both remain unchecked, even in Log mode. Unknown end
+times break elapsed-time calculation until a known endpoint; a timed arrow supplies
 that endpoint without inventing duration or credit. Checked unknowns mark totals
 incomplete and preserve recorded daily/summary values. Explicit credit may exceed
 elapsed time, such as `100/60`; it is preserved with a non-blocking warning.
@@ -338,7 +386,7 @@ Parentheses describe the activity before them and never add credit, including
 something like `(+15 std)`, which is plain text. An empty part (`prj & & std`) or
 an unclosed parenthesis is reported; it blocks only when project credit depends on
 it. Activity names cannot contain `/`. Credit may exceed the elapsed
-time (`70/60`). Quick entry also accepts `1h`, `1h30`, `1h 30m` and `90m`, and
+time (`70/60`). Quick entry also accepts `1h`, `1h30`, `1h 30m`, and `90m`, and
 lenient times such as `9:5`, and saves `90` and `09:05`. The colon before the
 activity is optional when reading. Daily notes start `## plan for 5 oct 26` (day
 without a leading zero, lowercase month, two-digit year); templates use
@@ -347,7 +395,7 @@ without a leading zero, lowercase month, two-digit year); templates use
 A note is a planner day when it is named `YYYY-MM-DD.md` (any folder) and holds a
 `## plan for …` or `## recorded totals` heading and a `SUM = n` total. Other notes
 with a date name, such as a journal or meeting notes, are ignored: never indexed,
-counted or changed. If two planner days name the same date, the one in the folder
+counted, or changed. If two planner days name the same date, the one in the folder
 holding the most planner days counts and Review names the other. When you create a
 day whose file name a non-plan note already uses, the planner asks before adding
 its plan on top of that note; everything already there stays below, unchanged (or
@@ -376,9 +424,9 @@ vault's `.obsidian/plugins/` folder.
 Before 0.2.85 the plugin's folder and ID were `plain-planner`. Obsidian treats a
 new ID as a new plugin, so move once with Obsidian closed:
 `node tools/migrate-plugin-id.mjs` (add `--dry-run` to see the plan first). It backs
-up the old folder and Obsidian's settings files, copies settings, recovery records
+up the old folder and Obsidian's settings files, copies settings, recovery records,
 and the index to `.obsidian/plugins/thejaz-planner`, installs the new build, renames
-the plugin in the enabled-plugins list, open tabs and hotkeys, verifies every copied
+the plugin in the enabled-plugins list, open tabs, and hotkeys, verifies every copied
 file, and only then moves the old folder to the Recycle Bin. Without the tool:
 rename the folder to `thejaz-planner`, replace its runtime files, and enable
 **THEJAZ Planner** again; reopen the planner tab.
@@ -406,7 +454,7 @@ missing hot rules show **🔥 unavailable**; click it for the explanation.
 
 The activity editor defaults to **Plan an activity**. Choose **Log completed work**
 when you want to record finished work. Its mode and section controls
-are rounded icon buttons with themed Obsidian menus, checked choices and clear
+are rounded icon buttons with themed Obsidian menus, checked choices, and clear
 chevrons. Enter/Space or Down opens a menu; arrows and Enter choose, Escape closes.
 Changing options preserves the draft and its inline destination.
 
@@ -433,11 +481,11 @@ gain minutes; fractional requests above 100% are capped too. Explicit over-credi
 such as `70/60` stays as written.
 
 An end time or duration without a name uses **activity**: `10:30`, `30`,
-`10:30 30` and `10:30; 30;` all accept an omitted activity. A last `?` stays
+`10:30 30`, and `10:30; 30;` all accept an omitted activity. A last `?` stays
 the activity itself, so `10:47 ?` is still an unknown activity, while `n/a` is a
 duration not accounted for, as at the start of a day: `10:47 n/a` saves
 `10:47 (n/a) : activity`. With nothing timed before it (an empty plan or
-after a gap), an end time without minutes also saves `n/a`: `14:30 prj` saves
+after an unknown end time), an end time without minutes also saves `n/a`: `14:30 prj` saves
 `14:30 (n/a) : prj`. A completed project still needs minutes to earn credit.
 
 An activity name that no earlier date uses carries a small **new** tag after its
@@ -455,8 +503,8 @@ nothing; ordinary time-anchor and missing-start checks still apply.
 Settings (lowercase, separated by commas; by default break, free, buffer, setup,
 awake, lunch, dinner, breakfast, procrastination) followed by your project codes.
 In Add below and Edit, click a chip to replace the component at the caret,
-keeping time, minutes, other components and parenthesized context. Chips remain
-available when the activity is omitted, such as `10:30`, `30` or `10:30; 30;`.
+keeping time, minutes, other components, and parenthesized context. Chips remain
+available when the activity is omitted, such as `10:30`, `30`, or `10:30; 30;`.
 Names that could be read as minutes use explicit fields when needed: choosing
 `2 chapters` after `10:30` produces `10:30; ; 2 chapters`. The activity name and
 calculated duration are preserved, including names such as `30` and `n/a`.
@@ -489,8 +537,8 @@ Suggestions match familiar activity labels and project codes.
 
 Use **Edit activity** to open the purple compact-input panel for that row.
 The original row is hidden while editing; **Save changes** updates it in place.
-Enter saves; Escape, Cancel or the close button discard. Leaving unsaved changes
-offers Save changes, Discard or Stay. Add below keeps a separate draft.
+Enter saves; Escape, Cancel, or the close button discard. Leaving unsaved changes
+offers Save changes, Discard, or Stay. Add below keeps a separate draft.
 Selecting another activity collapses Add activity without losing that draft.
 
 In the compact editor, enter `0` after the activity to calculate the interval,
@@ -518,7 +566,7 @@ ambiguous allocations still require explicit credits.
 
 Use the dashed **+ Add new project** chip beside the daily totals to define a
 code. Planner chooses an emoji and adds its total after the summary's last
-project, before the trailing separator, Bookmarks or other text. It also adds
+project, before the trailing separator, Bookmarks, or other text. It also adds
 the code to Settings and the current day's ordinary numeric footer, so its
 chip appears immediately. Existing credit is used when present; new projects
 start at zero. Existing totals and repeated additions are preserved. You can
@@ -529,7 +577,7 @@ also sorts existing recorded totals without recalculating them; equal totals kee
 their relative order, and surrounding separators/Bookmarks remain intact.
 Settings and note changes share the recovery journal and Undo/Redo.
 
-Projects has one searchable list with an add-code field, group selection and a
+Projects has one searchable list with an add-code field, group selection, and a
 remove action. A code can be registered in Settings, a positive daily footer, or
 an explicit summary project definition (including zero). Daily zero footers and
 templates do not register codes globally. Registration is remembered when a
@@ -545,17 +593,17 @@ existing recorded figures. Existing summary formatting and emoji are preserved.
 
 Each project has one saved emoji; different projects may share the same emoji.
 Existing summary assignments are kept, and missing assignments receive a random
-emoji once. Day, recorded-totals and Review chips use that same assignment.
+emoji once. Day, recorded-totals, and Review chips use that same assignment.
 Click the emoji beside a project in Settings to edit it, choose **random**, then
 **save** or **cancel**. A blank saved field chooses a random emoji. New-project
 forms also accept an optional emoji; re-adding an existing code without one
-keeps its assignment. Flags, skin tones and joined emoji are supported.
+keeps its assignment. Flags, skin tones, and joined emoji are supported.
 
 Emoji changes update only summary project prefixes, preserving recorded numbers
 and formatting. A manually different summary emoji stays in place until you
 choose **adopt summary emoji globally** or **restore assigned emoji** in Projects
 Settings. These changes share recovery and Undo/Redo with the saved assignments.
-Daily activity text, Markdown footers and templates never receive emoji markup.
+Daily activity text, Markdown footers, and templates never receive emoji markup.
 
 Use **rename or merge** beside a project in Settings, or click its chip and
 choose the same action. Rename changes its code to an unused one. Merge moves
@@ -563,24 +611,24 @@ its credit into an existing project, keeping the destination emoji and group.
 An existing rename destination offers **merge instead**, followed by a new
 preview; it never merges automatically.
 
-The preview lists affected daily notes, summaries and current/archived routine
+The preview lists affected daily notes, summaries, and current/archived routine
 templates, with exact before/after lines and project totals by record. Apply
 only after reviewing it. Complete project tokens change; similar words such as
-`dtflont`, descriptive `(dtfl)` and ordinary prose remain unchanged. Recorded
-work, daily SUM, elapsed durations and separate sessions are preserved. A merge
+`dtflont`, descriptive `(dtfl)`, and ordinary prose remain unchanged. Recorded
+work, daily SUM, elapsed durations, and separate sessions are preserved. A merge
 combines explicit allocations and numeric rows within each record. Ambiguous
 or conflicting affected records link to their source for correction first.
 
 One Undo/Redo restores or reapplies the complete operation, including Settings,
-emoji and groups. Concurrent edits invalidate a preview. Interrupted operations
+emoji, and groups. Concurrent edits invalidate a preview. Interrupted operations
 remain recoverable and stop when their source or file list has changed. Opening
 the dialog or installing this feature does not rename or merge existing projects.
 
 Click a project chip, or use **THEJAZ Planner: Manage projects** (also in Settings),
-to preview removal across daily notes, the configured summary and indexed
+to preview removal across daily notes, the configured summary, and indexed
 archive summaries. You can type an already-unlinked code too. **Remove attribution; keep activities**
 removes its numeric project definitions and Settings registration, preserving
-activity text, completion states, timestamps and duration expressions. Its credit
+activity text, completion states, timestamps, and duration expressions. Its credit
 is subtracted from daily SUM and corresponding summary work totals. **Delete project records** also
 removes project-only activity rows or the selected share of split activities,
 adjusting recorded SUM and matching summary dates when allocation is known.
@@ -612,8 +660,8 @@ or **THEJAZ Planner: Replace current day plan from template** in the command
 palette. Choose a template and select **Preview replacement**, then **Replace
 plan**. The preview shows the resulting note and the number of activities being
 replaced, including completed work. Template activities become unchecked, and
-credited totals reset. Existing personal text, annotations, footnotes and fenced
-examples remain in the daily note; only the template's activities, sections and
+credited totals reset. Existing personal text, annotations, footnotes, and fenced
+examples remain in the daily note; only the template's activities, sections, and
 numeric project definitions are used. The template itself stays intact.
 
 Undo restores the previous plan and its summary totals together; Redo reapplies
@@ -635,7 +683,7 @@ day without replacing it. Older historical formats remain read-only in Planner.
 | `K` / `J` | Move the current activity up / down one place |
 | `X` | Preview deletion of the selected activities |
 | Delete / Backspace, outside a text field | Delete selected activities together |
-| E, Enter, F2 or double-click a value | Open the compact editor; Enter saves, Escape cancels. E, Enter, F2 and **Edit** select the end time and minutes (`08:55 20` in `08:55 20 recovery`); double-clicking the time, minutes or activity selects just that part |
+| E, Enter, F2, or double-click a value | Open the compact editor; Enter saves, Escape cancels. E, Enter, F2, and **Edit** select the end time and minutes (`08:55 20` in `08:55 20 recovery`); double-clicking the time, minutes, or activity selects just that part |
 | Space | Toggle completion |
 | Enter in quick entry | Add the activity or all entered lines |
 | Ctrl + Enter in quick entry | Start another activity line without submitting |
@@ -659,10 +707,10 @@ stay unavailable from the keyboard. Hold-to-repeat does not repeat row actions.
 Menus keep their own keys; row-action letters do nothing in Report or while typing.
 Inside text fields, ordinary text editing and undo remain native. Every planner
 action also has a command-palette entry; no global shortcuts are assigned. **Focus
-activities**, **Toggle Activity / Report** and **Open Planner settings** work from
+activities**, **Toggle Activity / Report**, and **Open Planner settings** work from
 anywhere once you give them a hotkey.
 
-The totals, action toolbar and note/attention checks have separate divider lines.
+The totals, action toolbar, and note/attention checks have separate divider lines.
 Toolbar actions include icons and labels, with Undo/Redo first in a divided group.
 Unavailable history actions are disabled. Redo restores the exact saved note
 changes, including grouped source/summary edits, and stops if a note changed
@@ -699,7 +747,7 @@ the familiar icons in the summary.
 - Older formats can be reviewed; use their original Markdown source for editing.
 
 **Review** defaults to **This summary period**. Presets are **Past 7 days**,
-**Past 30 days**, **Past 6 months**, **Past 12 months**, **This summary period**
+**Past 30 days**, **Past 6 months**, **Past 12 months**, **This summary period**,
 and **All data**. All end today in the configured time zone, regardless of the
 selected planning day. Seven days means today plus the preceding six days;
 30 days means today plus the preceding 29. Month windows begin the day after
@@ -748,7 +796,7 @@ If a day saves but its summary fails, the day stays saved. Use **Retry summary
 update** for a pending calculation or **Finish interrupted edits** after an
 interrupted write. If a note changed since, finishing stops and names it instead
 of overwriting your work. Existing summary disagreements use **Review summary**,
-which shows only the daily rows, project totals and results that would change:
+which shows only the daily rows, project totals, and results that would change:
 lines marked `-` are in the summary now, lines marked `+` would replace them.
 Days that need fixing first are listed separately and left unchanged.
 
@@ -796,8 +844,8 @@ still shows one action strip for the current row; it wraps on narrow panes.
 Move up/down cuts and reinserts the selected row before the previous activity
 or after the next within its section. Crossing a section heading is a separate
 step: down enters the start of the next section; up enters the end of the previous
-section. Empty sections are included. Selection, focus and the editor follow that activity
-through repeated moves. Section headings, annotations, row text, time and credit
+section. Empty sections are included. Selection, focus, and the editor follow that activity
+through repeated moves. Section headings, annotations, row text, time, and credit
 stay intact. Actions disable only at the beginning/end of the whole day when no
 adjacent section remains. Undo restores the move.
 Omitting minutes or entering `0` calculates the duration from that endpoint.
@@ -825,7 +873,9 @@ fingerprints, rebuilt from the current note when needed. Unchanged notes an edit
 depends on are recorded as fingerprints. Finished history keeps up to 100
 changes for 30 days within about 1 MB, dropping the oldest first. Unresolved
 recovery records remain until resolved, so necessary recovery evidence is never
-silently discarded.
+silently discarded. If neither recovery file can be read at startup, Planner
+says so, copies both aside as `recovery-unreadable-<time>-0.json` and `-1.json`,
+and starts new history; delete those copies once you no longer need them.
 
 Disabling the plugin leaves the Markdown fully usable. Before replacing a
 plugin release, disable it, replace `main.js`, `manifest.json`, and `styles.css`,

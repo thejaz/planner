@@ -25,7 +25,7 @@ describe('exact times and minutes (rounding retired in 0.2.139)', () => {
 });
 
 describe('percent credit', () => {
-  it('recognises one decimal fraction and resolves it against elapsed or stated minutes', () => {
+  it('recognizes one decimal fraction and resolves it against elapsed or stated minutes', () => {
     expect(hasPercent('.25/')).toBe(true);
     expect(hasPercent('25/')).toBe(false);
     expect(requestsElapsed('.25/')).toBe(true);
@@ -60,8 +60,33 @@ describe('percent credit', () => {
   });
 });
 
+describe('a colon before the name (0.3.10)', () => {
+  it('marks where the name starts, as in a note row', () => {
+    expect(entryFields('14:30 30 : prj')).toEqual({ time: '14:30', label: 'prj', duration: '30', separated: true });
+    expect(entryFields('14:30 : prj')).toEqual({ time: '14:30', label: 'prj', duration: undefined, separated: true });
+    expect(entryFields('14:30: prj')).toEqual({ time: '14:30', label: 'prj', duration: undefined, separated: true });
+    expect(entryFields('now : prj')).toEqual({ time: 'now', label: 'prj', duration: undefined, separated: true });
+    expect(entryFields('30 : read 2 chapters')).toEqual({ time: undefined, label: 'read 2 chapters', duration: '30', separated: true });
+    expect(entryFields(': fill water bottles')).toEqual({ time: undefined, label: 'fill water bottles', duration: undefined, separated: true });
+    expect(entryFields('? 30 : prj')).toMatchObject({ time: '?', duration: '30', label: 'prj' });
+    expect(entryFields('? : prj')).toMatchObject({ time: undefined, duration: '?', label: 'prj' });
+    expect(entryFields(':')).toBeNull();
+  });
+  it('leaves times and names that merely contain a colon as before', () => {
+    expect(entryFields('14:30 prj')).toEqual({ time: '14:30', label: 'prj', duration: undefined, separated: false });
+    expect(entryFields('notes: ch 3')).toMatchObject({ label: 'notes: ch 3', separated: false });
+    expect(entryFields('14:30 meeting : budget')).toMatchObject({ time: '14:30', label: 'meeting : budget' });
+  });
+  it('saves the row and keeps numbers in the name', () => {
+    expect(rows('10:30 30 : prj').rows).toEqual(['- [x] 10:30 (30) : prj']);
+    expect(rows('10:30 : read 2 chapters').rows).toEqual(['- [x] 10:30 (30) : read 2 chapters']);
+    expect(rows(': fill water bottles').rows[0]).toMatch(/\) : fill water bottles$/);
+    expect(rows('25:99 : prj').diagnostics.join()).toMatch(/not a time/);
+  });
+});
+
 describe('semicolon fields', () => {
-  it('reads time, minutes and activity by semicolons as well as by position', () => {
+  it('reads time, minutes, and activity by semicolons as well as by position', () => {
     expect(entryFields('14:30; 30; read two chapters')).toEqual({ time: '14:30', label: 'read two chapters', duration: '30', separated: true });
     expect(entryFields('30; prj')).toEqual({ time: undefined, label: 'prj', duration: '30', separated: true });
     expect(entryFields('14:30 30; prj')).toEqual({ time: '14:30', label: 'prj', duration: '30', separated: true });

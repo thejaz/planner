@@ -69,8 +69,8 @@ describe('explicit recorded totals days', () => {
     expect(disputed(ordinary)).toBe(true);
     const day = parseDay(text, path);
     // The note among most planner days counts once; the other is named, not added.
-    const neighbour = parseDay(text.replace(/\d+/g, '0'), 'archive/2012-01-04.md');
-    const duplicate = review([day, parseDay(text, 'other/2012-01-05.md'), neighbour], '2012-01-05', '2012-01-05');
+    const neighbor = parseDay(text.replace(/\d+/g, '0'), 'archive/2012-01-04.md');
+    const duplicate = review([day, parseDay(text, 'other/2012-01-05.md'), neighbor], '2012-01-05', '2012-01-05');
     expect(duplicate.rows[0]).toMatchObject({ source: 'recorded totals', sum: 210, paths: [path] });
     expect(duplicate.rows[0]!.issues).toContain('Also a plan for this date, not counted: other/2012-01-05.md.');
   });

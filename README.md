@@ -5,7 +5,7 @@ in ordinary Markdown daily notes that stay readable and editable without the
 plugin.
 
 - **Quick daily planning.** Type `14:30 30 prj` and Planner writes
-  `- [ ] 14:30 (30) : prj` into today's note. End times, durations and split
+  `- [ ] 14:30 (30) : prj` into today's note. End times, durations, and split
   credit (`20-30/50 wrk & party`) are calculated for you; `now` and `fill` stand
   for the current time and the gap before the next activity.
 - **Accurate totals.** Each day keeps plain `PRJ = 60` … `SUM = 60` totals, and
@@ -17,7 +17,7 @@ plugin.
   `==new record==` in its summary.
 - **Tidy logs.** Correct times, shift plans, and combine repeated rows such as
   `nve`, `org`, `nve` into one `nve & org` row. Advisory warnings read once, link
-  to their lines and can be ignored.
+  to their lines, and can be ignored.
 - **Keyboard first.** Single-key row actions, Undo/Redo, and a built-in keyboard
   reference (`?`).
 - **Safe by design.** Every change previews or can be undone, a concurrent edit
@@ -31,7 +31,7 @@ plugin.
 
 **Report.** Totals, group shares, records, and a day-by-day list for any range.
 
-![Report view: totals, group shares, records and day records](docs/images/report.png)
+![Report view: totals, group shares, records, and day records](docs/images/report.png)
 
 ## Getting started
 
@@ -78,11 +78,12 @@ minutes are optional.
 | `50 prj` | 50 minutes after the selected row |
 | `14:30 prj` | ends 14:30; minutes calculated from the previous end time |
 | `now prj` | ends now, in your configured time zone |
-| `fill : prj` | ends where the next activity starts, filling the gap |
+| `fill prj` | ends where the next activity starts, filling the gap |
 | `14:30 70/120 prj` | 70 minutes of credit out of 120 elapsed |
 | `22:25 35-35/70 prj & std` | 35 minutes for each project |
 | `14:30; 30; read 2 chapters` | semicolons separate fields, so names may hold numbers |
-| `...` or `14:00 >` | a gap, or a restart anchor after one |
+| `14:30 30 : prj` | a colon marks where the name starts, as in the note |
+| `...` or `14:00 >` | a placeholder (the next row counts from the last end time), or a restart |
 
 Only registered project codes earn credit; other words are ordinary activities.
 A name no earlier day has used carries a small **new** tag.
@@ -105,7 +106,7 @@ Keys work while the planner has focus and never while you type in a field.
 - Planner makes no network requests and collects no telemetry. Its only web
   address is a link to the author's GitHub page in Settings, which opens in your
   browser when you click it.
-- It reads candidate daily notes, summary notes, the shared criteria note and
+- It reads candidate daily notes, summary notes, the shared criteria note, and
   routine templates in your vault to recognize planner content. It changes
   planner notes through the actions and automatic totals described in the
   [user guide](docs/user-guide.md).
@@ -113,17 +114,18 @@ Keys work while the planner has focus and never while you type in a field.
   `.obsidian/plugins/thejaz-planner/` (under your configured vault config folder).
   `index.json` caches the **full text** of indexed planner days and summaries.
   Recovery snapshots can contain **full daily-note text**, other small-note
-  text, changed text and settings checkpoints for undo and crash recovery.
+  text, changed text, and settings checkpoints for undo and crash recovery.
 - Finished recovery history is pruned when saved: at most 30 days, 100 resolved
-  operations and about one million stored characters. Pending/interrupted
+  operations, and about one million stored characters. Pending/interrupted
   operations and unfinished summary updates remain until resolved, even beyond
   those limits. Two alternating recovery snapshots protect against failed saves;
-  an older copy can remain until replaced. These limits are not secure deletion.
+  an older copy can remain until replaced. If neither can be read, both are kept
+  aside as `recovery-unreadable-...` copies until you delete them. These limits are not secure deletion.
 - Cache and recovery files are readable local data, not encrypted by Planner.
   Treat them like your notes: exclude them from public repositories and support
   uploads. Planner does not transmit them; your sync or backup tools may include
   them according to your configuration.
-- No plugin-specific metadata is added to your notes. Settings, project groups
+- No plugin-specific metadata is added to your notes. Settings, project groups,
   and ignored warnings are kept in the plugin folder; record marks and totals are
   ordinary Markdown you can edit or remove.
 

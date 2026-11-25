@@ -10,7 +10,8 @@ const fill = (input: string, previous = setup, following = pause) => quickEntry(
 
 describe('fill', () => {
   it('ends where the next activity starts and takes the gap as its minutes', () => {
-    for (const input of ['fill : task', 'fill: task', 'FILL : task', 'fill; ; task'])
+    // Like now, fill is an end time and needs no colon (0.3.9); the colon and semicolon forms still work.
+    for (const input of ['fill task', 'Fill  task', 'fill : task', 'fill: task', 'FILL : task', 'fill; ; task'])
       expect(fill(input), input).toMatchObject({ rows: ['- [ ] 09:55 (55) : task'], diagnostics: [] });
     expect(fill('fill').rows).toEqual(['- [ ] 09:55 (55) : activity']);
   });
@@ -27,16 +28,25 @@ describe('fill', () => {
     expect(fill('fill : task', open.entries[0], open.entries[1]).diagnostics.join()).toMatch(/end time and minutes/);
     expect(fill('fill : task\nlunch').diagnostics.join()).toMatch(/last line only/);
   });
-  it('is not mistaken for an activity named fill', () => {
-    expect(fill('filler task').rows[0]).not.toContain('09:55');
-    // A word after fill without a colon is an activity name, not the keyword.
-    for (const input of ['fill water bottles', 'fill task', '10:30 fill tank'])
+  it('counts only the whole leading word, and a semicolon keeps fill in a name', () => {
+    expect(fill('fill water bottles').rows).toEqual(['- [ ] 09:55 (55) : water bottles']);
+    for (const input of ['filler task', 'fill-up task', 'fillet', '10:30 fill tank'])
       expect(fill(input).rows[0], input).not.toContain('09:55');
-    expect(fill('fill water bottles').rows[0]).toContain(': fill water bottles');
+    expect(fill('; fill water bottles').rows[0]).toMatch(/\) : fill water bottles$/);
+    expect(fill('; fill water bottles').rows[0]).not.toContain('09:55');
+    expect(fill(': fill water bottles').rows[0]).toMatch(/\) : fill water bottles$/);
+    // After fill, a colon keeps numbers in the name.
+    expect(fill('fill : read 2 chapters').rows).toEqual(['- [ ] 09:55 (55) : read 2 chapters']);
+  });
+  it('says how to write a name when fill has no gap to fill', () => {
+    const hint = '; fill water bottles';
+    expect(quickEntry('fill tank', 'plan', pause, '12:00', [], {}).diagnostics.join()).toContain(hint);
+    expect(quickEntry('fill : task', 'plan', pause, '12:00', [], {}).diagnostics.join()).not.toContain(hint);
+    expect(quickEntry('fill 30/ task', 'plan', pause, '12:00', [], {}).diagnostics.join()).not.toContain(hint);
   });
   it('works in Edit, filling up to the row after the edited one', () => {
     const t = '## plan for x\n### morning\n- [ ] 09:00 (10) : setup\n- [ ] 09:20 (20) : task\n- [ ] 10:00 (5) : break\n';
-    const d = parseDay(t, '2026-11-19.md'), result = compactEdit(d, d.entries[1]!, 'fill : task', '12:00', [], { following: d.entries[2] });
+    const d = parseDay(t, '2026-11-19.md'), result = compactEdit(d, d.entries[1]!, 'fill task', '12:00', [], { following: d.entries[2] });
     expect(applyPatches(t, result.change.patches)).toContain('- [ ] 09:55 (55) : task');
   });
 });

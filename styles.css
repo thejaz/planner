@@ -135,6 +135,8 @@
 .planner-new-activity { font-weight: inherit; color: inherit; }
 .planner-new-activity::after { content: "new"; display: inline-block; margin-left: 5px; padding: 0 5px; border: 1px solid var(--background-modifier-border); border-radius: 999px; font-size: .68em; font-weight: 500; line-height: 1.45; letter-spacing: .03em; color: var(--text-muted); vertical-align: .12em; text-transform: lowercase; }
 .planner-project-warning { flex-basis: 100%; font-size: 12px; color: var(--text-muted); }
+.planner-action-reasons { flex-basis: 100%; font-size: 12px; color: var(--text-muted); }
+.planner-action-reasons.planner-hidden { display: none; }
 .planner-row-actions { display: none; grid-column: 2 / -1; position: static; flex-wrap: wrap; align-items: center; gap: 5px; padding: 5px 0; background: transparent; border: 0; box-shadow: none; }
 .planner-row.is-current > .planner-row-actions { display: flex; }
 .planner-row-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }

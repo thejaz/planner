@@ -23,7 +23,7 @@ mechanism. These approved conversions preserve each project's credit and elapsed
 The first previously read `45/120 : frm (+15 chp)`. The second previously read
 `260 : free (+30 chp)`: the owner explicitly chose to partition its elapsed
 block into 230 ordinary minutes and 30 CHP minutes. Completed/planned state,
-endpoints, headings, footers, summary rows, annotations and prose stay intact.
+endpoints, headings, footers, summary rows, annotations, and prose stay intact.
 
 ## Procedure
 
@@ -31,13 +31,13 @@ endpoints, headings, footers, summary rows, annotations and prose stay intact.
    `node tools/migrate-joiner.mjs --report <private-report.json>`.
 2. Review every patch in the private report. It scans non-hidden Markdown,
    including archives and routine examples. It refuses ambiguous extra credit,
-   unreadable project allocations, historical slash ambiguity, invalid encoding
+   unreadable project allocations, historical slash ambiguity, invalid encoding,
    and pending recovery. Ordinary ambiguous hyphenated names are listed and
    retained. The newest checksum-valid recovery snapshot is authoritative.
 3. Copy the affected originals and plugin settings into a child directory of
    `.test-vault`, outside the indexed notes (a hidden child is suitable).
    Run the same tool with `--vault <copy> --isolated --codes-file <report>`.
-   Apply and verify every copied patch, credit, elapsed value and exact rollback.
+   Apply and verify every copied patch, credit, elapsed value, and exact rollback.
    `--isolated` is refused outside a child of this project's isolated vault.
    Native checks read the resulting copies through Obsidian's adapter; the old
    plugin must not index or update those copies.
@@ -50,7 +50,7 @@ endpoints, headings, footers, summary rows, annotations and prose stay intact.
    replacements. It verifies all affected and unaffected Markdown hashes and
    unchanged settings/recovery. Keep its private manifest and rollback copies.
 6. Leave Planner disabled until the target parser is ready. Retain the existing
-   dependencies, current build, reusable tests and recovery evidence. Recycle
+   dependencies, current build, reusable tests, and recovery evidence. Recycle
    only disposable staging/output. Do not package personal reports or notes.
 
 Rollback, with Obsidian closed:
@@ -71,7 +71,7 @@ never recomputed from wall-clock gaps.
 The owner-authorized pass scanned 6,913 Markdown files and changed 86 activity
 rows in 33 notes: 84 joiner changes and two retired extra-credit expressions.
 The full post-migration scan found zero further patches, zero extra-credit
-expressions and zero migration issues. Ordinary ambiguous hyphenated words
+expressions, and zero migration issues. Ordinary ambiguous hyphenated words
 were retained. Every unaffected Markdown hash and each settings/recovery hash
 matched the preflight inventory; only the enabled-plugin list additionally
 changed to leave the old parser disabled.
@@ -80,11 +80,11 @@ All 33 copied notes matched the planned patches and passed native Obsidian
 adapter readback followed by byte-exact rollback. Sixteen reusable migration
 tests cover allocation preservation, literal zero, context, case, completed
 and planned rows, line endings/BOM, idempotence, refusal cases, read-only dry
-runs, stale inventory, parser disabling and guarded exact rollback.
-`npm run check` passed: 638 tests across 40 files, typechecking and build, with
+runs, stale inventory, parser disabling, and guarded exact rollback.
+`npm run check` passed: 638 tests across 40 files, typechecking, and build, with
 the three previously documented advisory lint warnings and no errors.
 The rebuilt runtime matched the installed runtime byte for byte. Version
 0.2.103 and production parser code were unchanged; no installation or archives
 were made. New-syntax interaction tests await the owner's parser implementation.
-Private patch inventories, original bytes and native evidence remain outside
+Private patch inventories, original bytes, and native evidence remain outside
 the project in the migration backup; they must not enter source commits.

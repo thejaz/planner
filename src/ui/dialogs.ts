@@ -65,7 +65,7 @@ export class ManageProjectDialog extends PlannerModal {
     const reset = () => {
       plan = undefined; output.empty(); error.empty(); gateApply(apply, applyHint, 'preview');
       explanation.setText(mode.value === 'unlink'
-        ? 'Keep activity wording, checkboxes and times. Remove this project attribution and subtract its credited minutes from daily and summary work totals. Other project credits and prose stay intact.'
+        ? 'Keep activity wording, checkboxes, and times. Remove this project attribution and subtract its credited minutes from daily and summary work totals. Other project credits and prose stay intact.'
         : 'Remove this project\u0027s activity rows, its part of split activities, and its project totals across daily notes and summaries. Keep other projects and prose. Adjust known daily/SUM records; aggregate-only history stays preserved. Preview every change first.');
     };
     const buttons = form.createDiv({ cls: 'planner-dialog-buttons' });
@@ -132,7 +132,7 @@ export class ProjectTransferDialog extends PlannerModal {
     action.createEl('option', { value: 'rename', text: 'Rename to a new code' });
     action.createEl('option', { value: 'merge', text: 'Merge into an existing project' });
     const destination = form.createEl('label', { cls: 'planner-field' });
-    const explanation = form.createEl('p', { cls: 'planner-dialog-explanation', text: 'Preview changes to daily notes, summaries and templates. Work totals stay unchanged. A merge keeps the destination emoji and group.' });
+    const explanation = form.createEl('p', { cls: 'planner-dialog-explanation', text: 'Preview changes to daily notes, summaries, and templates. Work totals stay unchanged. A merge keeps the destination emoji and group.' });
     const output = form.createDiv({ cls: 'planner-project-transfer-preview' });
     const error = form.createEl('p', { cls: 'planner-error', attr: { role: 'alert' } });
     const buttons = form.createDiv({ cls: 'planner-dialog-buttons' });
@@ -156,7 +156,7 @@ export class ProjectTransferDialog extends PlannerModal {
       apply.setText(merging ? 'apply merge' : 'apply rename');
       explanation.setText(merging
         ? 'Combine project credits while preserving daily SUM and elapsed time. Separate sessions remain separate. The destination keeps its emoji and group.'
-        : 'Change complete project references in daily notes, summaries and templates. Amounts, activity descriptions and unrelated text stay unchanged.');
+        : 'Change complete project references in daily notes, summaries, and templates. Amounts, activity descriptions, and unrelated text stay unchanged.');
     };
     source.onchange = () => destinationField(); action.onchange = () => destinationField();
     mergeInstead.onclick = () => { const value = target.value.trim().toUpperCase(); action.value = 'merge'; destinationField(value); target.focus(); };
@@ -355,7 +355,7 @@ export class CorrectDialog extends PlannerModal {
       if (!option.preview) return;
       const following = option.preview.following;
       anchor.setText(option.preview.anchors.map(a => `Start from ${a.time} - ${a.label}`).join(' | ') +
-        (following ? ` | Also corrects the next ${following === 1 ? 'activity, which' : `${following} activities, which`} would otherwise run backwards.` : ''));
+        (following ? ` | Also corrects the next ${following === 1 ? 'activity, which' : `${following} activities, which`} would otherwise run backward.` : ''));
       if (!option.preview.change.patches.length) preview.createEl('p', { text: 'Nothing to correct with this option.' });
       for (const patch of option.preview.change.patches) {
         const row = preview.createDiv({ cls: 'planner-correction-row' });
@@ -478,7 +478,7 @@ const ENTRY_SYNTAX: [string, string][] = [
   ['70/60 prj', 'Credit more than the elapsed time, for example from a buffer'],
   ['14:30 30-0/ prj & lunch', 'Join activities with &, one amount each'],
   ['20-10 free time & prj (review)', 'Each part\'s first word names it; parentheses describe it and earn nothing'],
-  ['14:30; 30; read 2 chapters', 'Semicolons separate time, minutes and activity'],
+  ['14:30; 30; read 2 chapters', 'Semicolons separate time, minutes, and activity'],
   ['14:30 .25/ prj', 'Credit 25% of the elapsed minutes'], ['.1/20 prj', 'Credit 10% of 20 minutes'],
   ['14:30 .5-.5/ pr1 & pr2', 'Shares are whole minutes and never exceed the elapsed block'],
   ['... or ?', 'A gap: nothing known'], ['? 30 prj', 'End time unknown: saved as ? (30) : prj'], ['12:55 >', 'Start again at 12:55'],

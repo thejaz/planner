@@ -42,7 +42,7 @@ try {
     tag: getComputedStyle(el, '::after').content })).filter(g => g.text === name), name);
   await page.waitForFunction(name => [...document.querySelectorAll('.planner-row .planner-new-activity')].some(el => el.textContent === name), name);
   const first = await green();
-  // 0.2.135: plain text colour and weight with a small "new" tag, unlike bold coloured projects.
+  // 0.2.135: plain text color and weight with a small "new" tag, unlike bold colored projects.
   assert.equal(first.length, 1); assert.equal(first[0].color, first[0].plain); assert.equal(first[0].weight, first[0].plainWeight);
   assert.equal(first[0].tag, '"new"');
   assert.equal(await page.evaluate(name => document.querySelector('.planner-row .planner-label')?.textContent, name), name);

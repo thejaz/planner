@@ -17,7 +17,7 @@ export function help(element: HTMLElement, text: string): void {
 }
 
 let accessibleLabelSequence = 0;
-/** Obsidian treats aria-label as a black hover bubble; keep the name through labelled text instead. */
+/** Obsidian treats aria-label as a black hover bubble; keep the name through labeled text instead. */
 export function quietSettingsLabels(root: HTMLElement): void {
   for (const element of root.querySelectorAll<HTMLElement>('[aria-label]')) {
     const name = element.getAttribute('aria-label')!;

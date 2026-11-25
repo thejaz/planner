@@ -23,13 +23,18 @@ describe('a first activity with an end time and no minutes', () => {
     expect(compactEdit(day, day.entries[0]!, '09:15 walk', '15:00').entry.duration).toBe('n/a');
     expect(() => compactEdit(day, day.entries[0]!, '09:15 / walk', '15:00')).toThrow('previous activity');
   });
-  it('edits a row after a gap or an unknown end time to n/a when its minutes are left out', () => {
-    for (const before of ['- [ ] ...', '- [x] ? (30) : walk']) {
+  it('edits a row after an unknown end time to n/a when its minutes are left out', () => {
+    for (const before of ['- [x] ? (30) : walk']) {
       const day = parseDay(`- [x] 09:00 (n/a) : walk\n${before}\n- [ ] 10:00 (30) : read`);
       expect(compactEdit(day, day.entries[2]!, '10:15 read', '15:00').entry.duration).toBe('n/a');
       expect(compactEdit(day, day.entries[2]!, '10:15 read', '15:00', undefined, { durationTouched: true }).entry.duration).toBe('n/a');
       expect(() => compactEdit(day, day.entries[2]!, '10:15 / read', '15:00')).toThrow('previous activity');
     }
+  });
+  it('measures a row after a ... placeholder from the last known end time (0.3.11)', () => {
+    const day = parseDay('- [x] 09:00 (n/a) : walk\n- [ ] ...\n- [ ] 10:00 (30) : read');
+    expect(compactEdit(day, day.entries[2]!, '10:15 read', '15:00', undefined, { durationTouched: true }).entry.duration).toBe('75');
+    expect(compactEdit(day, day.entries[2]!, '10:15 / read', '15:00').entry.duration).toBe('75');
   });
   it('still asks for minutes when a completed first project would earn no credit, saying how', () => {
     const message = quickEntry('05:35 frm', 'log', undefined, '12:00', undefined, { allowBaseline: true }).diagnostics.join(' ');

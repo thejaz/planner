@@ -10,7 +10,7 @@ import { plannerUI } from './planner-ui.mjs';
 const screenshots = process.argv.includes('--screenshots') || process.env.PLANNER_SCREENSHOTS === '1';
 const browser = await chromium.connectOverCDP('http://127.0.0.1:9237');
 const checks = [], errors = [];
-const D = { combine: '2005-07-01', fill: '2005-07-02', correct: '2005-07-03', prefixed: '2005-07-04', show: '2005-07-08', tagged: '2005-07-09', over: '2005-07-10' };
+const D = { combine: '2005-07-01', fill: '2005-07-02', correct: '2005-07-03', prefixed: '2005-07-04', show: '2005-07-08', tagged: '2005-07-09', over: '2005-07-10', placeholder: '2005-07-13' };
 let page;
 const note = (title, rows, footer = 'SUM = 0') => `## plan for ${title}\n\n### morning\n${rows}\n\n### afternoon\n\n### evening\n\n---\n\n${footer}\n`;
 try {
@@ -34,6 +34,7 @@ try {
   }, { D, notes: {
     [`${D.combine}.md`]: note('1 jul 05', '- [x] 08:00 (n/a) : awake\n- [x] 08:18 (18) : setup\n- [x] 08:24 (6) : nve\n- [x] 08:26 (2) : org\n- [x] 08:28 (2) : nve\n- [x] 08:29 (1) : org\n- [x] 08:32 (3) : nve\n- [ ] ...'),
     [`${D.fill}.md`]: note('2 jul 05', '- [ ] 08:50 (n/a) : awake\n- [ ] 09:00 (10) : setup\n- [ ] 10:00 (5) : break'),
+    [`${D.placeholder}.md`]: note('13 jul 05', '- [x] 20:00 (n/a) : awake\n- [x] 20:21 (21) : tea\n- [ ] ...\n- [ ] 22:30 (60) : reading'),
     [`${D.correct}.md`]: note('3 jul 05', '- [x] 06:17 (n/a) : awake\n- [ ] 06:25 (8) : chores\n- [ ] 06:35 (10) : iwbs\n- [ ] 05:23 (20) : breakfast\n- [ ] 05:26 (3) : setup\n- [ ] 06:26 (60) : prj\n- [ ] 05:35 (12) : preps\n- [ ] ...'),
     // A journal note sharing the date name: with a prefix, the planner leaves it alone.
     [`${D.prefixed}.md`]: 'Journal entry for this date.\n',
@@ -64,19 +65,46 @@ try {
   assert.equal(await page.locator('.planner-row.is-current [data-planner-row-action="combine"]').isVisible(), false);
   checks.push('Combine: five repeated rows preview and save as 08:32 (11-3) : nve & org; hidden for a single row');
 
+  // 0.3.12: with several rows selected, why Shift and Combine are unavailable shows under the buttons.
+  const reasons = await page.evaluate(() => {
+    const v = app.workspace.getLeavesOfType('thejaz-planner')[0].view;
+    v.selected = 3; v.selection = new Set([2, 3]); v.paintSelection();
+    const element = v.contentEl.querySelector('.planner-row.is-current [data-planner-action-reasons]');
+    const several = { hidden: element.classList.contains('planner-hidden'), text: element.innerText };
+    v.selected = 2; v.selection = new Set(); v.paintSelection();
+    const single = v.contentEl.querySelector('.planner-row.is-current [data-planner-action-reasons]').classList.contains('planner-hidden');
+    return { several, single };
+  });
+  assert(!reasons.several.hidden && reasons.several.text.includes('Combine needs all selected activities completed, or all planned.') && reasons.several.text.includes('Shift: Completed activities never move'), JSON.stringify(reasons));
+  assert(reasons.single, JSON.stringify(reasons));
+  // A key for an unavailable action says why.
+  await page.locator('.planner-row.is-current').focus();
+  await page.keyboard.press('s');
+  await page.locator('.notice', { hasText: 'Completed activities never move' }).waitFor({ timeout: 3000 });
+  checks.push('Several selected rows say under the buttons why Shift and Combine are unavailable; a single row shows nothing; pressing S on a completed row shows the reason');
+
   // Fill: the gap between setup (09:00) and break (starts 09:55).
   await open(D.fill);
   assert.deepEqual(await page.evaluate(() => app.workspace.getLeavesOfType('thejaz-planner')[0].view.day.entries.map(e => e.label)), ['awake', 'setup', 'break']);
   // Select setup without clicking over another row's action strip, then open Add below.
   await page.evaluate(() => { const v = app.workspace.getLeavesOfType('thejaz-planner')[0].view; v.selected = 1; v.clearRowSelection(); v.paintSelection(); v.updatePreview(); v.focusEntry(); });
   const input = page.getByRole('textbox', { name: 'Quick entry', exact: true });
-  await input.fill('fill : task');
+  await input.fill('fill task');
   assert((await page.locator('.planner-preview').innerText()).includes('- [ ] 09:55 (55) : task'));
   await input.press('Enter'); await settled();
   assert((await raw(`${D.fill}.md`)).includes('- [ ] 09:00 (10) : setup\n- [ ] 09:55 (55) : task\n- [ ] 10:00 (5) : break'));
-  checks.push('fill : task between 09:00 (10) and 10:00 (5) previews and saves 09:55 (55) : task');
+  checks.push('fill task (no colon, like now) between 09:00 (10) and 10:00 (5) previews and saves 09:55 (55) : task');
 
-  // Correct is available for a mistyped earlier time and continues through rows that would run backwards.
+  // 0.3.11: a ... row is a placeholder; adding after it counts from the last end time (20:21 tea).
+  await open(D.placeholder);
+  await page.evaluate(() => { const v = app.workspace.getLeavesOfType('thejaz-planner')[0].view; v.selected = 2; v.clearRowSelection(); v.paintSelection(); v.updatePreview(); v.focusEntry(); });
+  await input.fill('fill task');
+  assert((await page.locator('.planner-preview').innerText()).includes('- [ ] 21:30 (69) : task'), await page.locator('.planner-preview').innerText());
+  await input.press('Enter'); await settled();
+  assert((await raw(`${D.placeholder}.md`)).includes('- [x] 20:21 (21) : tea\n- [ ] ...\n- [ ] 21:30 (69) : task\n- [ ] 22:30 (60) : reading'), await raw(`${D.placeholder}.md`));
+  checks.push('With the ... placeholder selected, fill task counts from 20:21 tea and saves 21:30 (69) : task after it');
+
+  // Correct is available for a mistyped earlier time and continues through rows that would run backward.
   await open(D.correct);
   await row(3).click();
   const correct = page.locator('.planner-row.is-current [data-planner-row-action="correct"]');
@@ -86,7 +114,7 @@ try {
   assert((await fix.innerText()).includes('Also corrects the next 3 activities'), await fix.innerText());
   await fix.getByRole('button', { name: /^(apply|correct)/i }).first().click(); await settled();
   assert((await raw(`${D.correct}.md`)).includes('- [ ] 06:55 (20) : breakfast\n- [ ] 06:58 (3) : setup\n- [ ] 07:58 (60) : prj\n- [ ] 08:10 (12) : preps\n- [ ] ...'));
-  checks.push('Correct is enabled after a mistyped time; rebuilding continues through the three rows that ran backwards');
+  checks.push('Correct is enabled after a mistyped time; rebuilding continues through the three rows that ran backward');
 
   // Daily note prefix: a new day is created beside the journal note, which is left alone.
   await page.evaluate(() => app.plugins.plugins['thejaz-planner'].controller.updateSettings({ dailyName: { kind: 'prefix', text: 'plan ' } }));
@@ -249,7 +277,7 @@ try {
     if (c.__featureSettings) { c.settings = c.__featureSettings; delete c.__featureSettings; await c.saveSettings(); }
     const [left, right] = c.__featureSplits ?? [true, true]; delete c.__featureSplits;
     if (!left) app.workspace.leftSplit.expand(); if (!right) app.workspace.rightSplit.expand();
-    for (const f of app.vault.getMarkdownFiles().filter(f => /^(?:plan )?2005-07-(?:0\d|1[012])\.md$|^thejaz-summary-feature\.md$/.test(f.path))) await app.vault.delete(f);
+    for (const f of app.vault.getMarkdownFiles().filter(f => /^(?:plan )?2005-07-(?:0\d|1[0-3])\.md$|^thejaz-summary-feature\.md$/.test(f.path))) await app.vault.delete(f);
   }).catch(() => {});
   await browser.close();
 }
